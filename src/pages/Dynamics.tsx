@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import {
   DndContext, DragEndEvent, DragOverEvent, DragOverlay, DragStartEvent,
-  PointerSensor, useSensor, useSensors, closestCorners,
+  PointerSensor, useSensor, useSensors, closestCenter,
+  useDroppable,
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -89,19 +90,22 @@ function Column({ colId, label, cards, onDetail, onAttachment, compact }: {
   onDetail: (c: DynamicsCard) => void; onAttachment: (c: DynamicsCard) => void
   compact?: boolean
 }) {
+  const { setNodeRef, isOver } = useDroppable({ id: colId })
+
   return (
-    <div style={{ minWidth: compact ? 160 : 220, maxWidth: compact ? 160 : 220, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minWidth: compact ? 162 : 224, maxWidth: compact ? 162 : 224, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 2px' }}>
         <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: 'rgba(255,255,255,0.70)', letterSpacing: '-0.01em' }}>{label}</span>
         <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)',
           borderRadius: 6, padding: '1px 6px', fontWeight: 500 }}>{cards.length}</span>
       </div>
       <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-        <div data-column-id={colId} style={{
-          flex: 1, minHeight: compact ? 60 : 80, display: 'flex', flexDirection: 'column', gap: 6,
+        <div ref={setNodeRef} style={{
+          flex: 1, minHeight: compact ? 120 : 100, display: 'flex', flexDirection: 'column', gap: 6,
           padding: 8, borderRadius: 14,
-          border: '1.5px dashed rgba(255,255,255,0.08)',
-          background: 'rgba(255,255,255,0.02)',
+          border: isOver ? '1.5px dashed rgba(212,196,41,0.55)' : '1.5px dashed rgba(255,255,255,0.08)',
+          background: isOver ? 'rgba(212,196,41,0.05)' : 'rgba(255,255,255,0.02)',
+          transition: 'background 0.12s, border-color 0.12s',
         }}>
           {cards.map(c => (
             <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} />
@@ -156,44 +160,47 @@ export default function Dynamics() {
   const colCards = (board: 'board1' | 'board2', col: string) =>
     cards.filter(c => c.board === board && c.column_id === col).sort((a, b) => a.position - b.position)
 
-  const findCard = (id: string) => cards.find(c => c.id === id)
-
-  const colOf = (id: string): { board: 'board1' | 'board2'; column_id: string } | null => {
-    if (BOARD1_COLS.find(c => c.id === id)) return { board: 'board1', column_id: id }
-    if (BOARD2_COLS.find(c => c.id === id)) return { board: 'board2', column_id: id }
-    const card = findCard(id)
-    if (!card) return null
-    return { board: card.board, column_id: card.column_id }
+  function resolveCol(id: string): { board: 'board1' | 'board2'; column_id: string } | null {
+    if (BOARD1_COLS.some(c => c.id === id)) return { board: 'board1', column_id: id }
+    if (BOARD2_COLS.some(c => c.id === id)) return { board: 'board2', column_id: id }
+    const card = cards.find(c => c.id === id)
+    return card ? { board: card.board, column_id: card.column_id } : null
   }
 
   function handleDragStart(e: DragStartEvent) {
-    setActiveCard(findCard(String(e.active.id)) ?? null)
+    setActiveCard(cards.find(c => c.id === String(e.active.id)) ?? null)
   }
 
   function handleDragOver(e: DragOverEvent) {
     const { active, over } = e
-    if (!over) return
-    const from = colOf(String(active.id))
-    const to   = colOf(String(over.id))
-    if (!from || !to) return
-    if (from.board === to.board && from.column_id === to.column_id) return
+    if (!over || active.id === over.id) return
+    const dest = resolveCol(String(over.id))
+    if (!dest) return
+    const src = cards.find(c => c.id === String(active.id))
+    if (!src) return
+    if (src.board === dest.board && src.column_id === dest.column_id) return
     setCards(prev => prev.map(c =>
-      c.id === String(active.id) ? { ...c, board: to.board, column_id: to.column_id } : c
+      c.id === String(active.id) ? { ...c, board: dest.board, column_id: dest.column_id } : c
     ))
   }
 
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
     setActiveCard(null)
-    if (!over || active.id === over.id) return
-    const to = colOf(String(over.id))
-    if (!to) return
-    const overCard = findCard(String(over.id))
-    const newPos = overCard ? overCard.position : cards.filter(c => c.board === to.board && c.column_id === to.column_id).length
+    if (!over) return
+    const dest = resolveCol(String(over.id))
+    if (!dest) return
+    const src = cards.find(c => c.id === String(active.id))
+    if (!src) return
+    const siblings = cards.filter(c => c.board === dest.board && c.column_id === dest.column_id && c.id !== String(active.id))
+    const overCard = cards.find(c => c.id === String(over.id))
+    const newPos   = overCard && overCard.id !== String(active.id) ? overCard.position : siblings.length
     setCards(prev => prev.map(c =>
-      c.id === String(active.id) ? { ...c, ...to, position: newPos } : c
+      c.id === String(active.id) ? { ...c, board: dest.board, column_id: dest.column_id, position: newPos } : c
     ))
-    await supabase.from('dynamics_cards').update({ board: to.board, column_id: to.column_id, position: newPos }).eq('id', String(active.id))
+    await supabase.from('dynamics_cards')
+      .update({ board: dest.board, column_id: dest.column_id, position: newPos })
+      .eq('id', String(active.id))
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -239,7 +246,7 @@ export default function Dynamics() {
         <button onClick={() => setModal(true)} className="btn-primary">+ Nova dinâmica</button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners}
+      <DndContext sensors={sensors} collisionDetection={closestCenter}
         onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
 
         {/* Board 1 — Estratégias */}

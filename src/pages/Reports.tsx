@@ -45,7 +45,7 @@ export default function Reports() {
     async function load() {
       const from = format(subDays(startOfToday(), 30), 'yyyy-MM-dd')
       const [{ data: r }, { data: d }] = await Promise.all([
-        supabase.from('receipts').select('*').gte('deposit_date', from).eq('status', 'approved'),
+        supabase.from('receipts').select('*').gte('deposit_date', from).neq('status', 'rejected'),
         supabase.from('dynamics_cards').select('*'),
       ])
       setReceipts((r as Receipt[]) ?? [])
@@ -63,12 +63,14 @@ export default function Reports() {
   const totalAmount = receipts.reduce((s, r) => s + Number(r.amount), 0)
   const totalCount  = receipts.length
   const bestDay     = dayStats.reduce((b, d) => d.total > b.total ? d : b, dayStats[0])
-  const ranking     = [...dayStats].sort((a, b) => b.total - a.total).filter(d => d.count > 0)
-
-  const dynForDay = (dayLabel: string) =>
+  const dynForDayFn = (dayLabel: string) =>
     dynamics.filter(d => d.board === 'board2' && d.column_id === dayLabel)
 
-  const drawerDynamics = selectedDay ? dynForDay(selectedDay) : []
+  const ranking = [...dayStats]
+    .filter(d => d.count > 0 || dynForDayFn(d.day).length > 0)
+    .sort((a, b) => b.total - a.total)
+
+  const drawerDynamics = selectedDay ? dynForDayFn(selectedDay) : []
 
   return (
     <div style={{ padding: 28, maxWidth: 1200 }}>
@@ -164,7 +166,7 @@ export default function Reports() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                   {ranking.map((d, i) => {
-                    const dynCards = dynForDay(d.day)
+                    const dynCards = dynForDayFn(d.day)
                     const pct = bestDay.total > 0 ? (d.total / bestDay.total) * 100 : 0
                     return (
                       <div key={d.day}>

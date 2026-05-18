@@ -19,7 +19,7 @@ export default function Register() {
       setError(result.error.message ?? 'Erro ao criar conta.')
       setLoading(false)
     } else if (result.needsConfirmation) {
-      setError('Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.')
+      setError('Confirme seu e-mail antes de entrar.')
       setLoading(false)
     } else {
       navigate('/')
@@ -27,53 +27,51 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#F2F2F0' }}>
-      <div className="w-full max-w-[360px]">
-
-        <div className="flex items-center gap-2.5 mb-8">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold" style={{ background: '#1A1A1A' }}>T</div>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, background: '#FFFFFF',
+            color: '#0E0E11', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 800,
+          }}>T</div>
           <div>
-            <div className="text-[14px] font-semibold text-[#1A1A1A] tracking-tight leading-none">TERLAI</div>
-            <div className="text-[10px] text-[#CCCCCC] tracking-widest uppercase mt-0.5">System</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#FFF', letterSpacing: '-0.02em' }}>TERLAI</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.30)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>System</div>
           </div>
         </div>
 
-        <div className="glass p-7">
-          <h1 className="text-[18px] font-semibold text-[#1A1A1A] tracking-tight mb-1">Criar conta</h1>
-          <p className="text-[13px] text-[#AAAAAA] mb-6">Preencha os dados para se cadastrar</p>
+        <div className="glass-raised" style={{ padding: 28 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#FFF', letterSpacing: '-0.03em', marginBottom: 4 }}>Criar conta</h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 24 }}>Preencha os dados para se cadastrar</p>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <label className="label block mb-1.5">Nome completo</label>
-              <input className="input" type="text" value={fullName} onChange={e => setFullName(e.target.value)}
-                required placeholder="João Silva" />
+              <div className="label" style={{ marginBottom: 6 }}>Nome completo</div>
+              <input className="input" type="text" value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="João Silva" />
             </div>
             <div>
-              <label className="label block mb-1.5">E-mail</label>
-              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)}
-                required placeholder="seu@email.com" />
+              <div className="label" style={{ marginBottom: 6 }}>E-mail</div>
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="seu@email.com" />
             </div>
             <div>
-              <label className="label block mb-1.5">Senha</label>
-              <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)}
-                required minLength={6} placeholder="Mínimo 6 caracteres" />
+              <div className="label" style={{ marginBottom: 6 }}>Senha</div>
+              <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} placeholder="Mínimo 6 caracteres" />
             </div>
-
             {error && (
-              <div className="text-[12px] text-[#999] bg-[rgba(0,0,0,0.03)] px-3 py-2 rounded-lg">
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8 }}>
                 {error}
               </div>
             )}
-
-            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5 mt-1">
+            <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 4, padding: '10px 0', width: '100%' }}>
               {loading ? 'Criando...' : 'Criar conta'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-[13px] text-[#AAAAAA] mt-5">
+        <p style={{ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.30)', marginTop: 20 }}>
           Já tem conta?{' '}
-          <Link to="/login" className="text-[#1A1A1A] font-medium hover:underline">Entrar</Link>
+          <Link to="/login" style={{ color: 'rgba(255,255,255,0.70)', fontWeight: 500 }}>Entrar</Link>
         </p>
       </div>
     </div>

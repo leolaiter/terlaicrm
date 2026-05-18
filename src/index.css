@@ -8,92 +8,73 @@
 
   body {
     min-height: 100vh;
-    color: #1A1A1A;
-
-    /* ── Mesh gradient background – dá profundidade pro glass ── */
-    background-color: #DDD9D3;
+    color: #FFFFFF;
+    background-color: #0E0E11;
     background-image:
-      radial-gradient(ellipse 900px 700px  at  -5%   5%, rgba(255,253,248,0.95) 0%, transparent 55%),
-      radial-gradient(ellipse 700px 700px  at 110%  90%, rgba(200,205,215,0.80) 0%, transparent 55%),
-      radial-gradient(ellipse 600px 500px  at  55%  15%, rgba(235,230,220,0.70) 0%, transparent 50%),
-      radial-gradient(ellipse 500px 600px  at  10%  85%, rgba(215,220,225,0.60) 0%, transparent 50%),
-      radial-gradient(ellipse 400px 400px  at  80%  35%, rgba(225,220,215,0.55) 0%, transparent 45%),
-      radial-gradient(ellipse 350px 350px  at  35%  60%, rgba(240,238,232,0.50) 0%, transparent 45%);
+      radial-gradient(ellipse 900px 700px at 70% 20%, rgba(160, 90, 40, 0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 600px 600px at 20% 80%, rgba(80, 60, 40, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 500px 400px at 90% 70%, rgba(100, 70, 30, 0.10) 0%, transparent 50%);
   }
 }
 
 @layer components {
 
-  /* ──────────────────────────────────────────────
-     GLASS — vidro real sobre o fundo mesh
-  ────────────────────────────────────────────── */
+  /* ── Glass cards escuros ── */
   .glass {
-    background: rgba(255, 255, 255, 0.48);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.70);
-    border-radius: 18px;
-    box-shadow:
-      0 4px 32px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255,255,255,0.80);
-  }
-
-  /* Glass mais leve para painéis internos */
-  .glass-sm {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.65);
-    border-radius: 12px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-  }
-
-  /* Glass escuro – como o card dark da referência */
-  .glass-dark {
-    background: rgba(20, 20, 22, 0.62);
+    background: rgba(255, 255, 255, 0.055);
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 18px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.28);
-    color: #FFFFFF;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.30);
   }
 
-  /* ──────────────────────────────────────────────
-     METRIC CARD
-  ────────────────────────────────────────────── */
-  .metric-card {
-    background: rgba(255, 255, 255, 0.48);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.70);
+  .glass-sm {
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Glass levemente mais claro — destaque */
+  .glass-raised {
+    background: rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.13);
     border-radius: 18px;
-    box-shadow:
-      0 4px 32px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255,255,255,0.80);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  /* ── Metric card ── */
+  .metric-card {
+    background: rgba(255, 255, 255, 0.055);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.30);
     padding: 1.375rem 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
   }
 
-  /* ──────────────────────────────────────────────
-     TYPOGRAPHY
-  ────────────────────────────────────────────── */
+  /* ── Typography ── */
   .label {
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: #999999;
+    color: rgba(255, 255, 255, 0.35);
   }
-
-  .label-dark { color: rgba(255,255,255,0.45); }
 
   .value-xl {
     font-size: 2rem;
     font-weight: 700;
-    color: #111111;
+    color: #FFFFFF;
     letter-spacing: -0.04em;
     line-height: 1;
   }
@@ -101,35 +82,33 @@
   .value-lg {
     font-size: 1.375rem;
     font-weight: 600;
-    color: #111111;
+    color: #FFFFFF;
     letter-spacing: -0.025em;
     line-height: 1.1;
   }
 
   .page-title {
-    font-size: 2rem;
-    font-weight: 300;
-    color: #1A1A1A;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #FFFFFF;
     letter-spacing: -0.04em;
     line-height: 1;
   }
 
   .page-subtitle {
     font-size: 12.5px;
-    color: #999999;
+    color: rgba(255,255,255,0.35);
     margin-top: 4px;
   }
 
   .page-header { margin-bottom: 2rem; }
 
-  /* ──────────────────────────────────────────────
-     ICON CIRCLE
-  ────────────────────────────────────────────── */
+  /* ── Icon circle ── */
   .icon-circle {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.07);
+    background: rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -137,21 +116,15 @@
     flex-shrink: 0;
   }
 
-  .icon-circle-dark {
-    background: rgba(255,255,255,0.12);
-  }
-
-  /* ──────────────────────────────────────────────
-     PILL FILTER
-  ────────────────────────────────────────────── */
+  /* ── Pill filter ── */
   .pill-group {
     display: flex;
     gap: 2px;
     padding: 3px;
-    background: rgba(255,255,255,0.40);
+    background: rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.60);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 12px;
     width: fit-content;
   }
@@ -163,26 +136,24 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
-    color: #999999;
+    color: rgba(255,255,255,0.35);
     border: none;
     background: transparent;
     letter-spacing: 0.01em;
   }
 
-  .pill:hover { color: #1A1A1A; }
+  .pill:hover { color: rgba(255,255,255,0.75); }
 
   .pill-active {
-    background: rgba(255,255,255,0.85);
-    color: #1A1A1A;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.06);
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.30);
   }
 
-  /* ──────────────────────────────────────────────
-     TABLE
-  ────────────────────────────────────────────── */
+  /* ── Table ── */
   .data-table { width: 100%; border-collapse: collapse; }
 
-  .data-table thead tr { border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .data-table thead tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
   .data-table thead th {
     padding: 12px 16px;
     text-align: left;
@@ -190,41 +161,38 @@
     font-weight: 500;
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: #AAAAAA;
+    color: rgba(255,255,255,0.30);
   }
 
   .data-table tbody tr {
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
     transition: background 0.12s;
   }
   .data-table tbody tr:last-child { border-bottom: none; }
-  .data-table tbody tr:hover { background: rgba(255,255,255,0.35); }
-  .data-table tbody td { padding: 12px 16px; font-size: 13px; color: #1A1A1A; }
+  .data-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+  .data-table tbody td { padding: 12px 16px; font-size: 13px; color: rgba(255,255,255,0.80); }
 
-  /* ──────────────────────────────────────────────
-     BUTTONS
-  ────────────────────────────────────────────── */
+  /* ── Buttons ── */
   .btn-primary {
-    background: #1A1A1A;
-    color: #FFFFFF;
+    background: #FFFFFF;
+    color: #0E0E11;
     border: none;
     border-radius: 10px;
     padding: 9px 18px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s, transform 0.1s;
     font-family: 'Inter', sans-serif;
-    letter-spacing: 0.01em;
   }
-  .btn-primary:hover   { opacity: 0.82; }
-  .btn-primary:active  { transform: scale(0.98); }
+  .btn-primary:hover  { opacity: 0.85; }
+  .btn-primary:active { transform: scale(0.98); }
   .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
 
   .btn-secondary {
-    background: rgba(255,255,255,0.55);
-    color: #555;
-    border: 1px solid rgba(0,0,0,0.09);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.10);
     border-radius: 10px;
     padding: 8px 16px;
     font-size: 13px;
@@ -232,36 +200,31 @@
     cursor: pointer;
     transition: all 0.15s;
     font-family: 'Inter', sans-serif;
-    backdrop-filter: blur(8px);
   }
-  .btn-secondary:hover { background: rgba(255,255,255,0.80); color: #1A1A1A; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.12); color: #FFFFFF; }
 
-  /* ──────────────────────────────────────────────
-     INPUT
-  ────────────────────────────────────────────── */
+  /* ── Input ── */
   .input {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid rgba(0,0,0,0.09);
+    border: 1px solid rgba(255,255,255,0.10);
     border-radius: 10px;
-    background: rgba(255,255,255,0.70);
+    background: rgba(255,255,255,0.06);
     font-size: 13px;
-    color: #1A1A1A;
+    color: #FFFFFF;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
     font-family: 'Inter', sans-serif;
-    backdrop-filter: blur(8px);
   }
-  .input::placeholder { color: #BBBBBB; }
+  .input::placeholder { color: rgba(255,255,255,0.25); }
   .input:focus {
-    border-color: rgba(0,0,0,0.22);
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
-    background: rgba(255,255,255,0.88);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.09);
   }
+  .input option { background: #1A1A1F; color: #FFFFFF; }
 
-  /* ──────────────────────────────────────────────
-     BADGE / TAG
-  ────────────────────────────────────────────── */
+  /* ── Badge / Tag ── */
   .tag {
     display: inline-flex;
     align-items: center;
@@ -269,42 +232,41 @@
     border-radius: 7px;
     font-size: 11px;
     font-weight: 500;
-    background: rgba(255,255,255,0.55);
-    color: #555555;
-    border: 1px solid rgba(0,0,0,0.07);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.60);
+    border: 1px solid rgba(255,255,255,0.09);
     cursor: pointer;
-    transition: background 0.12s;
+    transition: all 0.12s;
     white-space: nowrap;
-    backdrop-filter: blur(6px);
   }
-  .tag:hover { background: rgba(255,255,255,0.85); color: #1A1A1A; }
+  .tag:hover { background: rgba(255,255,255,0.14); color: #FFFFFF; }
 
-  /* STATUS */
-  .status-pending  { background: rgba(0,0,0,0.05); color: #999; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
-  .status-approved { background: rgba(0,0,0,0.08); color: #1A1A1A; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
-  .status-rejected { background: rgba(0,0,0,0.04); color: #BBBBBB; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; text-decoration: line-through; }
+  /* Status */
+  .status-pending  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.40); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+  .status-approved { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+  .status-rejected { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.25); font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; text-decoration: line-through; }
 
-  /* DIVIDER */
-  .divider { height: 1px; background: rgba(0,0,0,0.06); }
+  /* Divider */
+  .divider { height: 1px; background: rgba(255,255,255,0.07); }
+
+  /* Accent yellow — gráficos */
+  .accent { color: #D4C429; }
 }
 
-/* ──────────────────────────────────────────────
-   SCROLLBAR
-────────────────────────────────────────────── */
+/* Scrollbar */
 ::-webkit-scrollbar       { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
 
-/* ──────────────────────────────────────────────
-   RECHARTS OVERRIDES
-────────────────────────────────────────────── */
+/* Recharts */
 .recharts-default-tooltip {
   border-radius: 12px !important;
-  border: 1px solid rgba(255,255,255,0.70) !important;
-  background: rgba(255,255,255,0.75) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  background: rgba(20,20,25,0.90) !important;
   backdrop-filter: blur(16px) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.10) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.40) !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 12px !important;
+  color: #FFFFFF !important;
 }

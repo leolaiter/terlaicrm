@@ -47,10 +47,11 @@ function CategoryBadge({ categoryKey }: { categoryKey: string }) {
 }
 
 /* ─── Sortable Card ────────────────────────────── */
-function KanbanCard({ card, onDetail, onAttachment }: {
+function KanbanCard({ card, onDetail, onAttachment, onDelete }: {
   card: DynamicsCard
   onDetail: (c: DynamicsCard) => void
   onAttachment: (c: DynamicsCard) => void
+  onDelete: (c: DynamicsCard) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
 
@@ -82,27 +83,59 @@ function KanbanCard({ card, onDetail, onAttachment }: {
           {card.description}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
         <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onDetail(card) }}
           style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
           Detalhes
         </button>
-        {card.attachment_url && (
-          <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onAttachment(card) }}
-            style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-            📎 {card.attachment_name ?? 'Anexo'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {card.attachment_url && (
+            <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onAttachment(card) }}
+              title="Ver anexo"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 24, height: 24, borderRadius: 7,
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)',
+                cursor: 'pointer', fontSize: 12,
+              }}>
+              📎
+            </button>
+          )}
+          <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onDelete(card) }}
+            title="Excluir dinâmica"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 24, height: 24, borderRadius: 7,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+              cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.30)',
+              transition: 'all 0.12s',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.background = 'rgba(239,68,68,0.15)'
+              el.style.borderColor = 'rgba(239,68,68,0.30)'
+              el.style.color = 'rgba(239,68,68,0.80)'
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement
+              el.style.background = 'rgba(255,255,255,0.04)'
+              el.style.borderColor = 'rgba(255,255,255,0.07)'
+              el.style.color = 'rgba(255,255,255,0.30)'
+            }}
+          >
+            🗑
           </button>
-        )}
+        </div>
       </div>
     </div>
   )
 }
 
 /* ─── Column ────────────────────────────────────── */
-function Column({ colId, label, cards, onDetail, onAttachment, compact }: {
+function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact }: {
   colId: string; label: string; cards: DynamicsCard[]
   onDetail: (c: DynamicsCard) => void; onAttachment: (c: DynamicsCard) => void
-  compact?: boolean
+  onDelete: (c: DynamicsCard) => void; compact?: boolean
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: colId })
 
@@ -122,7 +155,7 @@ function Column({ colId, label, cards, onDetail, onAttachment, compact }: {
           transition: 'background 0.12s, border-color 0.12s',
         }}>
           {cards.map(c => (
-            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} />
+            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} onDelete={onDelete} />
           ))}
         </div>
       </SortableContext>
@@ -172,6 +205,12 @@ export default function Dynamics() {
     setCards((data as DynamicsCard[]) ?? [])
   }
   useEffect(() => { load() }, [])
+
+  async function handleDelete(card: DynamicsCard) {
+    if (!window.confirm(`Excluir "${card.title}"?`)) return
+    setCards(prev => prev.filter(c => c.id !== card.id))
+    await supabase.from('dynamics_cards').delete().eq('id', card.id)
+  }
 
   const colCards = (board: 'board1' | 'board2', col: string) =>
     cards.filter(c => c.board === board && c.column_id === col).sort((a, b) => a.position - b.position)
@@ -308,7 +347,7 @@ export default function Dynamics() {
             <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
               {BOARD1_COLS.map(col => (
                 <Column key={col.id} colId={col.id} label={col.label}
-                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} />
+                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete} />
               ))}
             </div>
           </div>
@@ -335,7 +374,7 @@ export default function Dynamics() {
             <div style={{ display: 'flex', gap: 10, minWidth: 'max-content' }}>
               {BOARD2_COLS.map(col => (
                 <Column key={col.id} colId={col.id} label={col.label}
-                  cards={colCards('board2', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard}
+                  cards={colCards('board2', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
                   compact />
               ))}
             </div>

@@ -134,8 +134,9 @@ function FloatingCard({ card }: { card: DynamicsCard }) {
 /* ─── Page ───────────────────────────────────────── */
 export default function Dynamics() {
   const { profile } = useAuth()
-  const [cards, setCards]         = useState<DynamicsCard[]>([])
+  const [cards, setCards]           = useState<DynamicsCard[]>([])
   const [activeCard, setActiveCard] = useState<DynamicsCard | null>(null)
+  const [dragOrigin, setDragOrigin] = useState<{ board: 'board1'|'board2'; column_id: string; position: number } | null>(null)
   const [detailCard, setDetailCard] = useState<DynamicsCard | null>(null)
   const [attachCard, setAttachCard] = useState<DynamicsCard | null>(null)
   const [modal, setModal]           = useState(false)
@@ -168,7 +169,9 @@ export default function Dynamics() {
   }
 
   function handleDragStart(e: DragStartEvent) {
-    setActiveCard(cards.find(c => c.id === String(e.active.id)) ?? null)
+    const card = cards.find(c => c.id === String(e.active.id))
+    setActiveCard(card ?? null)
+    if (card) setDragOrigin({ board: card.board, column_id: card.column_id, position: card.position })
   }
 
   function handleDragOver(e: DragOverEvent) {
@@ -186,21 +189,39 @@ export default function Dynamics() {
 
   async function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
+    const activeId = String(active.id)
     setActiveCard(null)
-    if (!over) return
+
+    // No valid drop target — revert card to where it started
+    if (!over) {
+      if (dragOrigin) {
+        setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
+      }
+      setDragOrigin(null)
+      return
+    }
+
     const dest = resolveCol(String(over.id))
-    if (!dest) return
-    const src = cards.find(c => c.id === String(active.id))
-    if (!src) return
-    const siblings = cards.filter(c => c.board === dest.board && c.column_id === dest.column_id && c.id !== String(active.id))
+    if (!dest) {
+      if (dragOrigin) {
+        setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
+      }
+      setDragOrigin(null)
+      return
+    }
+
+    const siblings = cards.filter(c => c.board === dest.board && c.column_id === dest.column_id && c.id !== activeId)
     const overCard = cards.find(c => c.id === String(over.id))
-    const newPos   = overCard && overCard.id !== String(active.id) ? overCard.position : siblings.length
+    const newPos   = overCard && overCard.id !== activeId ? overCard.position : siblings.length
+
     setCards(prev => prev.map(c =>
-      c.id === String(active.id) ? { ...c, board: dest.board, column_id: dest.column_id, position: newPos } : c
+      c.id === activeId ? { ...c, board: dest.board, column_id: dest.column_id, position: newPos } : c
     ))
+    setDragOrigin(null)
+
     await supabase.from('dynamics_cards')
       .update({ board: dest.board, column_id: dest.column_id, position: newPos })
-      .eq('id', String(active.id))
+      .eq('id', activeId)
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -241,13 +262,19 @@ export default function Dynamics() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#FFF', letterSpacing: '-0.04em', lineHeight: 1 }}>Dinâmicas</h1>
-          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>Arraste dinâmicas para o planejamento semanal</p>
+          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>Arraste dinâmicas para agendar na semana — e de volta para desagendar</p>
         </div>
         <button onClick={() => setModal(true)} className="btn-primary">+ Nova dinâmica</button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter}
-        onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        autoScroll={{ threshold: { x: 0.1, y: 0.15 }, acceleration: 20, interval: 5 }}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+      >
 
         {/* Board 1 — Estratégias */}
         <div style={{
@@ -265,13 +292,13 @@ export default function Dynamics() {
           </div>
         </div>
 
-        {/* Arrow indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, gap: 8 }}>
+        {/* Bidirectional indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, gap: 10 }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-            <span>↓</span>
-            <span>Arraste para agendar na semana</span>
-            <span>↓</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.18)' }}>↑</span>
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.02em' }}>arraste para agendar ou desagendar</span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.18)' }}>↓</span>
           </div>
           <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
         </div>

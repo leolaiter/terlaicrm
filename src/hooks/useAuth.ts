@@ -36,21 +36,24 @@ export function useAuth() {
   }
 
   async function signUp(email: string, password: string, fullName: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error || !data.user) return { error }
-
-    const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-    const role = count === 0 ? 'admin' : 'vendedor'
-
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      full_name: fullName,
+    const { data, error } = await supabase.auth.signUp({
       email,
-      role,
-      active: true,
+      password,
+      options: { data: { full_name: fullName } },
     })
+    if (error) return { error }
 
-    return { error: null }
+    // Trigger handle_new_user cria o profile automaticamente.
+    // Se confirmação de e-mail está desabilitada, session já existe e
+    // fazemos upsert para garantir full_name correto.
+    if (data.session && data.user) {
+      await supabase.from('profiles').upsert(
+        { id: data.user.id, full_name: fullName, email, active: true },
+        { onConflict: 'id', ignoreDuplicates: false }
+      )
+    }
+
+    return { error: null, needsConfirmation: !data.session }
   }
 
   async function signOut() {

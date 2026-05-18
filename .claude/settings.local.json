@@ -10,7 +10,12 @@
       "Bash(git init *)",
       "Bash(git remote *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(npx vite *)",
+      "Bash(ping -n 3 127.0.0.1)"
     ]
   }
 }

@@ -170,6 +170,15 @@ function EditableSheet({ sheetId }: { sheetId: string }) {
     setColumns(prev => prev.filter(c => c.id !== id))
   }
 
+  async function addRow() {
+    const pos = rows.length
+    const { data } = await supabase
+      .from('sheet_rows')
+      .insert({ sheet_id: sheetId, data: {}, position: pos })
+      .select().single()
+    if (data) setRows(prev => [...prev, data as SheetRow])
+  }
+
   async function deleteRow(id: string) {
     await supabase.from('sheet_rows').delete().eq('id', id)
     setRows(prev => prev.filter(r => r.id !== id))
@@ -360,6 +369,40 @@ function EditableSheet({ sheetId }: { sheetId: string }) {
       {columns.length === 0 && (
         <div style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
           Adicione uma coluna para começar →
+        </div>
+      )}
+
+      {columns.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px' }}>
+          <button
+            onClick={addRow}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.30)', fontSize: 12, fontFamily: 'Inter',
+              padding: '4px 8px', borderRadius: 6, transition: 'all 0.12s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.70)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.30)' }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
+            Adicionar linha
+          </button>
+
+          <button
+            onClick={addColumn}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(255,255,255,0.30)', fontSize: 12, fontFamily: 'Inter',
+              padding: '4px 8px', borderRadius: 6, transition: 'all 0.12s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.70)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.30)' }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>+</span>
+            Adicionar coluna
+          </button>
         </div>
       )}
     </div>

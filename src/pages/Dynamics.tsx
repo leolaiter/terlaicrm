@@ -23,10 +23,8 @@ const BOARD2_COLS = [
   { id: 'DOM', label: 'Dom' },
 ]
 
-/* ─── Card ──────────────────────────────────────── */
-function KanbanCard({
-  card, onDetail, onAttachment,
-}: {
+/* ─── Sortable Card ────────────────────────────── */
+function KanbanCard({ card, onDetail, onAttachment }: {
   card: DynamicsCard
   onDetail: (c: DynamicsCard) => void
   onAttachment: (c: DynamicsCard) => void
@@ -36,50 +34,47 @@ function KanbanCard({
   return (
     <div
       ref={setNodeRef}
+      {...attributes}
+      {...listeners}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.25 : 1,
-        background: '#FFFFFF',
-        border: '1px solid rgba(0,0,0,0.07)',
-        borderRadius: 10,
-        boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+        opacity: isDragging ? 0.2 : 1,
+        background: 'rgba(255,255,255,0.07)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: 14,
+        padding: '10px 12px',
         userSelect: 'none',
         cursor: 'grab',
-        padding: 12,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
       }}
-      {...attributes}
-      {...listeners}
     >
       {card.category && (
-        <div className="inline-flex items-center px-1.5 py-0.5 rounded mb-2"
-          style={{ background: '#F5F5F5', fontSize: 10, fontWeight: 500, color: '#999', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <div style={{
+          display: 'inline-block', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
+          background: 'rgba(255,255,255,0.07)', borderRadius: 5, padding: '2px 6px', marginBottom: 6,
+        }}>
           {card.category}
         </div>
       )}
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A', lineHeight: 1.35 }}>{card.title}</div>
+      <div style={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)', lineHeight: 1.35 }}>{card.title}</div>
       {card.description && (
-        <div style={{ fontSize: 12, color: '#AAAAAA', marginTop: 4, lineHeight: 1.4,
-          overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+        <div style={{
+          fontSize: 11.5, color: 'rgba(255,255,255,0.35)', marginTop: 4, lineHeight: 1.4,
+          overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        }}>
           {card.description}
         </div>
       )}
-      <div className="flex items-center gap-3 mt-2.5">
-        <button
-          onPointerDown={e => e.stopPropagation()}
-          onClick={e => { e.stopPropagation(); onDetail(card) }}
-          style={{ fontSize: 11, color: '#CCCCCC', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-          className="hover:!text-[#1A1A1A] transition-colors"
-        >
+      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onDetail(card) }}
+          style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
           Detalhes
         </button>
         {card.attachment_url && (
-          <button
-            onPointerDown={e => e.stopPropagation()}
-            onClick={e => { e.stopPropagation(); onAttachment(card) }}
-            style={{ fontSize: 11, color: '#CCCCCC', cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
-            className="hover:!text-[#1A1A1A] transition-colors"
-          >
+          <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onAttachment(card) }}
+            style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.28)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
             📎 {card.attachment_name ?? 'Anexo'}
           </button>
         )}
@@ -88,30 +83,26 @@ function KanbanCard({
   )
 }
 
-/* ─── Column ─────────────────────────────────────── */
-function Column({
-  colId, label, cards, onDetail, onAttachment,
-}: {
+/* ─── Column ────────────────────────────────────── */
+function Column({ colId, label, cards, onDetail, onAttachment, compact }: {
   colId: string; label: string; cards: DynamicsCard[]
   onDetail: (c: DynamicsCard) => void; onAttachment: (c: DynamicsCard) => void
+  compact?: boolean
 }) {
   return (
-    <div style={{ minWidth: 230, maxWidth: 230, display: 'flex', flexDirection: 'column' }}>
-      <div className="flex items-center justify-between mb-2.5 px-1">
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A1A', letterSpacing: '-0.01em' }}>{label}</span>
-        <span style={{ fontSize: 11, color: '#CCCCCC', background: '#F5F5F5',
-          borderRadius: 6, padding: '1px 7px', fontWeight: 500 }}>{cards.length}</span>
+    <div style={{ minWidth: compact ? 160 : 220, maxWidth: compact ? 160 : 220, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 2px' }}>
+        <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: 'rgba(255,255,255,0.70)', letterSpacing: '-0.01em' }}>{label}</span>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)',
+          borderRadius: 6, padding: '1px 6px', fontWeight: 500 }}>{cards.length}</span>
       </div>
       <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-        <div
-          data-column-id={colId}
-          style={{
-            flex: 1, minHeight: 80, display: 'flex', flexDirection: 'column', gap: 6,
-            padding: 8, borderRadius: 10,
-            border: '1.5px dashed rgba(0,0,0,0.08)',
-            background: 'rgba(255,255,255,0.4)',
-          }}
-        >
+        <div data-column-id={colId} style={{
+          flex: 1, minHeight: compact ? 60 : 80, display: 'flex', flexDirection: 'column', gap: 6,
+          padding: 8, borderRadius: 14,
+          border: '1.5px dashed rgba(255,255,255,0.08)',
+          background: 'rgba(255,255,255,0.02)',
+        }}>
           {cards.map(c => (
             <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} />
           ))}
@@ -121,16 +112,17 @@ function Column({
   )
 }
 
-/* ─── Drag overlay card ──────────────────────────── */
+/* ─── Overlay ────────────────────────────────────── */
 function FloatingCard({ card }: { card: DynamicsCard }) {
   return (
     <div style={{
-      background: '#FFFFFF', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 10,
-      boxShadow: '0 20px 60px rgba(0,0,0,0.18)', padding: 12, width: 220,
-      transform: 'rotate(2deg) scale(1.03)', opacity: 0.95, pointerEvents: 'none',
+      background: 'rgba(30,30,36,0.95)', border: '1px solid rgba(255,255,255,0.14)',
+      borderRadius: 14, boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+      padding: '10px 12px', width: 200,
+      transform: 'rotate(2deg) scale(1.04)', opacity: 0.96, pointerEvents: 'none',
     }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>{card.title}</div>
-      {card.description && <div style={{ fontSize: 12, color: '#AAAAAA', marginTop: 4 }}>{card.description}</div>}
+      <div style={{ fontSize: 12.5, fontWeight: 500, color: '#FFF' }}>{card.title}</div>
+      {card.description && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{card.description}</div>}
     </div>
   )
 }
@@ -138,19 +130,19 @@ function FloatingCard({ card }: { card: DynamicsCard }) {
 /* ─── Page ───────────────────────────────────────── */
 export default function Dynamics() {
   const { profile } = useAuth()
-  const [cards, setCards] = useState<DynamicsCard[]>([])
+  const [cards, setCards]         = useState<DynamicsCard[]>([])
   const [activeCard, setActiveCard] = useState<DynamicsCard | null>(null)
   const [detailCard, setDetailCard] = useState<DynamicsCard | null>(null)
   const [attachCard, setAttachCard] = useState<DynamicsCard | null>(null)
-  const [board, setBoard] = useState<'board1' | 'board2'>('board1')
-  const [modal, setModal] = useState(false)
+  const [modal, setModal]           = useState(false)
 
-  const [title, setTitle]       = useState('')
-  const [description, setDesc]  = useState('')
-  const [category, setCat]      = useState('')
-  const [colId, setColId]       = useState(BOARD1_COLS[0].id)
-  const [file, setFile]         = useState<File | null>(null)
-  const [saving, setSaving]     = useState(false)
+  const [title, setTitle]     = useState('')
+  const [description, setDesc] = useState('')
+  const [category, setCat]    = useState('')
+  const [colId, setColId]     = useState(BOARD1_COLS[0].id)
+  const [targetBoard, setTargetBoard] = useState<'board1' | 'board2'>('board1')
+  const [file, setFile]       = useState<File | null>(null)
+  const [saving, setSaving]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -161,8 +153,8 @@ export default function Dynamics() {
   }
   useEffect(() => { load() }, [])
 
-  const colCards = (b: 'board1' | 'board2', col: string) =>
-    cards.filter(c => c.board === b && c.column_id === col).sort((a, b) => a.position - b.position)
+  const colCards = (board: 'board1' | 'board2', col: string) =>
+    cards.filter(c => c.board === board && c.column_id === col).sort((a, b) => a.position - b.position)
 
   const findCard = (id: string) => cards.find(c => c.id === id)
 
@@ -218,9 +210,9 @@ export default function Dynamics() {
         attachment_type = file.type
       }
     }
-    const pos = cards.filter(c => c.board === board && c.column_id === colId).length
+    const pos = cards.filter(c => c.board === targetBoard && c.column_id === colId).length
     await supabase.from('dynamics_cards').insert({
-      board, column_id: colId, title, description, category,
+      board: targetBoard, column_id: colId, title, description, category,
       attachment_url, attachment_name, attachment_type, position: pos, created_by: profile?.id,
     })
     setTitle(''); setDesc(''); setCat(''); setFile(null)
@@ -228,41 +220,72 @@ export default function Dynamics() {
     setModal(false); setSaving(false); load()
   }
 
-  const cols = board === 'board1' ? BOARD1_COLS : BOARD2_COLS
+  const sectionHeader = (label: string, sub: string) => (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.01em' }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', marginTop: 2 }}>{sub}</div>
+    </div>
+  )
 
   return (
-    <div className="p-8">
+    <div style={{ padding: 28 }}>
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="page-header mb-0">
-          <h1 className="page-title">Dinâmicas</h1>
-          <p className="page-subtitle">Organize estratégias em boards interativos</p>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#FFF', letterSpacing: '-0.04em', lineHeight: 1 }}>Dinâmicas</h1>
+          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>Arraste dinâmicas para o planejamento semanal</p>
         </div>
-        <button onClick={() => { setModal(true); setColId(cols[0].id) }} className="btn-primary">
-          + Nova dinâmica
-        </button>
+        <button onClick={() => setModal(true)} className="btn-primary">+ Nova dinâmica</button>
       </div>
 
-      {/* Board tabs */}
-      <div className="pill-group mb-6">
-        {(['board1', 'board2'] as const).map(b => (
-          <button key={b} onClick={() => setBoard(b)} className={`pill ${board === b ? 'pill-active' : ''}`}>
-            {b === 'board1' ? 'Estratégias' : 'Planejamento Semanal'}
-          </button>
-        ))}
-      </div>
-
-      {/* Kanban */}
       <DndContext sensors={sensors} collisionDetection={closestCorners}
         onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-4 min-w-max">
-            {cols.map(col => (
-              <Column key={col.id} colId={col.id} label={col.label}
-                cards={colCards(board, col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} />
-            ))}
+
+        {/* Board 1 — Estratégias */}
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 24, padding: 20, marginBottom: 16,
+        }}>
+          {sectionHeader('Estratégias', 'Organize suas dinâmicas por categoria')}
+          <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
+              {BOARD1_COLS.map(col => (
+                <Column key={col.id} colId={col.id} label={col.label}
+                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} />
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Arrow indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, gap: 8 }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+            <span>↓</span>
+            <span>Arraste para agendar na semana</span>
+            <span>↓</span>
+          </div>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+        </div>
+
+        {/* Board 2 — Planejamento Semanal */}
+        <div style={{
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: 24, padding: 20,
+        }}>
+          {sectionHeader('Planejamento Semanal', 'Arraste dinâmicas para os dias da semana')}
+          <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 10, minWidth: 'max-content' }}>
+              {BOARD2_COLS.map(col => (
+                <Column key={col.id} colId={col.id} label={col.label}
+                  cards={colCards('board2', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard}
+                  compact />
+              ))}
+            </div>
+          </div>
+        </div>
+
         <DragOverlay>
           {activeCard ? <FloatingCard card={activeCard} /> : null}
         </DragOverlay>
@@ -271,12 +294,13 @@ export default function Dynamics() {
       {/* Drawers */}
       <Drawer open={!!detailCard} onClose={() => setDetailCard(null)} title="Detalhes">
         {detailCard && (
-          <div className="space-y-5">
-            <div><div className="label mb-1">Título</div><div className="text-[15px] font-semibold text-[#1A1A1A]">{detailCard.title}</div></div>
-            {detailCard.description && <div><div className="label mb-1">Descrição</div><div className="text-[13px] text-[#666]">{detailCard.description}</div></div>}
-            {detailCard.category && <div><div className="label mb-1">Categoria</div><div className="text-[13px] text-[#666]">{detailCard.category}</div></div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div><div className="label" style={{ marginBottom: 4 }}>Título</div><div style={{ fontSize: 16, fontWeight: 600, color: '#FFF' }}>{detailCard.title}</div></div>
+            {detailCard.description && <div><div className="label" style={{ marginBottom: 4 }}>Descrição</div><div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{detailCard.description}</div></div>}
+            {detailCard.category && <div><div className="label" style={{ marginBottom: 4 }}>Categoria</div><div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{detailCard.category}</div></div>}
             {detailCard.attachment_url && (
-              <div><div className="label mb-3">Anexo</div>
+              <div>
+                <div className="label" style={{ marginBottom: 10 }}>Anexo</div>
                 <FileViewer url={detailCard.attachment_url} fileType={detailCard.attachment_type ?? ''} name={detailCard.attachment_name ?? undefined} />
               </div>
             )}
@@ -292,37 +316,47 @@ export default function Dynamics() {
 
       {/* New card modal */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(4px)' }}>
-          <div className="glass w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <span className="text-[14px] font-semibold text-[#1A1A1A]">Nova dinâmica</span>
-              <button onClick={() => setModal(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#AAAAAA] hover:bg-[#F5F5F5] hover:text-[#1A1A1A] transition-all">×</button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(6px)' }}>
+          <div className="glass-raised" style={{ width: '100%', maxWidth: 440, margin: 16, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#FFF' }}>Nova dinâmica</span>
+              <button onClick={() => setModal(false)} style={{ width: 28, height: 28, borderRadius: 8, background: 'transparent',
+                border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 18, cursor: 'pointer' }}>×</button>
             </div>
-            <form onSubmit={handleCreate} className="space-y-3">
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label className="label block mb-1.5">Coluna</label>
-                <select className="input" value={colId} onChange={e => setColId(e.target.value)}>
-                  {cols.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                <div className="label" style={{ marginBottom: 6 }}>Board</div>
+                <select className="input" value={targetBoard} onChange={e => { setTargetBoard(e.target.value as 'board1'|'board2'); setColId(e.target.value === 'board1' ? BOARD1_COLS[0].id : BOARD2_COLS[0].id) }}>
+                  <option value="board1">Estratégias</option>
+                  <option value="board2">Planejamento Semanal</option>
                 </select>
               </div>
               <div>
-                <label className="label block mb-1.5">Título</label>
+                <div className="label" style={{ marginBottom: 6 }}>Coluna</div>
+                <select className="input" value={colId} onChange={e => setColId(e.target.value)}>
+                  {(targetBoard === 'board1' ? BOARD1_COLS : BOARD2_COLS).map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <div className="label" style={{ marginBottom: 6 }}>Título</div>
                 <input required className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Nome da dinâmica" />
               </div>
               <div>
-                <label className="label block mb-1.5">Descrição</label>
-                <textarea className="input resize-none" rows={3} value={description} onChange={e => setDesc(e.target.value)} placeholder="Descreva a dinâmica..." />
+                <div className="label" style={{ marginBottom: 6 }}>Descrição</div>
+                <textarea className="input" rows={3} value={description} onChange={e => setDesc(e.target.value)}
+                  placeholder="Descreva a dinâmica..." style={{ resize: 'none' }} />
               </div>
               <div>
-                <label className="label block mb-1.5">Categoria</label>
+                <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
                 <input className="input" value={category} onChange={e => setCat(e.target.value)} placeholder="ex: Meta, Reunião..." />
               </div>
               <div>
-                <label className="label block mb-1.5">Anexo</label>
+                <div className="label" style={{ marginBottom: 6 }}>Anexo</div>
                 <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={e => setFile(e.target.files?.[0] ?? null)}
-                  className="w-full text-[12px] text-[#999] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-medium file:bg-[#1A1A1A] file:text-white cursor-pointer" />
+                  className="input" style={{ paddingTop: 6 }} />
               </div>
-              <div className="flex justify-end gap-2 pt-1">
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
                 <button type="button" onClick={() => setModal(false)} className="btn-secondary">Cancelar</button>
                 <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Salvando...' : 'Criar card'}</button>
               </div>

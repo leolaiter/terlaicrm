@@ -6,23 +6,20 @@ import type { Receipt } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
 
-const BANKS = ['Bradesco','Itaú','Nubank','Banco do Brasil','Caixa','Santander','Inter','C6 Bank','Outro']
-
 function currency(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
 
 export default function Receipts() {
   const { profile } = useAuth()
-  const [receipts, setReceipts] = useState<Receipt[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [receipts, setReceipts]   = useState<Receipt[]>([])
+  const [loading, setLoading]     = useState(true)
   const [uploading, setUploading] = useState(false)
-  const [selected, setSelected] = useState<Receipt | null>(null)
+  const [selected, setSelected]   = useState<Receipt | null>(null)
   const [formError, setFormError] = useState('')
 
   const [amount, setAmount] = useState('')
   const [date, setDate]     = useState('')
-  const [bank, setBank]     = useState(BANKS[0])
   const [notes, setNotes]   = useState('')
   const [file, setFile]     = useState<File | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -54,10 +51,10 @@ export default function Receipts() {
     const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path)
     await supabase.from('receipts').insert({
       user_id: profile?.id, file_url: urlData.publicUrl, file_type: file.type,
-      amount: parseFloat(amount.replace(',', '.')), deposit_date: date, bank, notes, status: 'pending',
+      amount: parseFloat(amount.replace(',', '.')), deposit_date: date, notes, status: 'pending',
     })
 
-    setAmount(''); setDate(''); setBank(BANKS[0]); setNotes(''); setFile(null)
+    setAmount(''); setDate(''); setNotes(''); setFile(null)
     if (fileRef.current) fileRef.current.value = ''
     setUploading(false)
     load()
@@ -69,48 +66,49 @@ export default function Receipts() {
     return <span className="status-pending">Pendente</span>
   }
 
+  const colSpan = profile?.role === 'admin' ? 5 : 4
+
   return (
-    <div className="p-8 max-w-[1200px]">
+    <div style={{ padding: 28, maxWidth: 1200 }}>
       <div className="page-header">
         <h1 className="page-title">Comprovantes</h1>
         <p className="page-subtitle">Envie e gerencie comprovantes de depósito</p>
       </div>
 
       {/* Upload form */}
-      <div className="glass p-6 mb-5">
-        <div className="label mb-4">Novo Comprovante</div>
+      <div className="glass" style={{ padding: 24, marginBottom: 14 }}>
+        <div className="label" style={{ marginBottom: 16 }}>Novo Comprovante</div>
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <label className="label block mb-1.5">Valor (R$)</label>
+              <div className="label" style={{ marginBottom: 6 }}>Valor (R$)</div>
               <input className="input" type="text" value={amount} onChange={e => setAmount(e.target.value)}
                 required placeholder="0,00" />
             </div>
             <div>
-              <label className="label block mb-1.5">Data do depósito</label>
+              <div className="label" style={{ marginBottom: 6 }}>Data do depósito</div>
               <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} required />
             </div>
-            <div>
-              <label className="label block mb-1.5">Banco</label>
-              <select className="input" value={bank} onChange={e => setBank(e.target.value)}>
-                {BANKS.map(b => <option key={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label block mb-1.5">Arquivo (PDF ou imagem)</label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div className="label" style={{ marginBottom: 6 }}>Arquivo (PDF ou imagem)</div>
               <input
                 ref={fileRef} type="file" accept="image/*,.pdf"
                 onChange={e => setFile(e.target.files?.[0] ?? null)}
-                className="w-full text-[12px] text-[#999] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-medium file:bg-[#1A1A1A] file:text-white cursor-pointer"
+                style={{ width: '100%', fontSize: 12, color: 'rgba(255,255,255,0.50)', cursor: 'pointer' }}
               />
             </div>
-            <div className="col-span-2">
-              <label className="label block mb-1.5">Observação</label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div className="label" style={{ marginBottom: 6 }}>Observação</div>
               <input className="input" type="text" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opcional" />
             </div>
           </div>
-          {formError && <p className="text-[12px] text-[#999] mb-3">{formError}</p>}
-          <div className="flex justify-end">
+          {formError && (
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.05)',
+              padding: '8px 12px', borderRadius: 8, marginBottom: 12 }}>
+              {formError}
+            </p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" disabled={uploading} className="btn-primary">
               {uploading ? 'Enviando...' : 'Enviar comprovante'}
             </button>
@@ -119,41 +117,46 @@ export default function Receipts() {
       </div>
 
       {/* Table */}
-      <div className="glass overflow-hidden">
+      <div className="glass" style={{ overflow: 'hidden' }}>
         <table className="data-table">
           <thead>
             <tr>
               {profile?.role === 'admin' && <th>Vendedor</th>}
               <th>Valor</th>
               <th>Data</th>
-              <th>Banco</th>
               <th>Status</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-12 text-[#CCCCCC] text-[13px]">Carregando...</td></tr>
+              <tr><td colSpan={colSpan} style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>Carregando...</td></tr>
             ) : receipts.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-[#CCCCCC] text-[13px]">Nenhum comprovante ainda</td></tr>
+              <tr><td colSpan={colSpan} style={{ textAlign: 'center', padding: '48px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>Nenhum comprovante ainda</td></tr>
             ) : receipts.map(r => (
               <tr key={r.id}>
                 {profile?.role === 'admin' && (
                   <td>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#F0F0F0] flex items-center justify-center text-[10px] font-semibold text-[#888] shrink-0">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.60)',
+                      }}>
                         {(r.profiles?.full_name ?? '?').charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-[#1A1A1A]">{r.profiles?.full_name ?? '—'}</span>
+                      <span>{r.profiles?.full_name ?? '—'}</span>
                     </div>
                   </td>
                 )}
-                <td><span className="font-semibold text-[#111]">{currency(Number(r.amount))}</span></td>
-                <td className="text-[#888]">{format(new Date(r.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}</td>
-                <td className="text-[#888]">{r.bank}</td>
+                <td><span style={{ fontWeight: 600, color: '#FFF' }}>{currency(Number(r.amount))}</span></td>
+                <td style={{ color: 'rgba(255,255,255,0.50)' }}>{format(new Date(r.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                 <td>{statusEl(r.status)}</td>
                 <td>
-                  <button onClick={() => setSelected(r)} className="text-[12px] text-[#AAAAAA] hover:text-[#1A1A1A] transition-colors font-medium">
+                  <button onClick={() => setSelected(r)}
+                    style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                      background: 'none', border: 'none', fontFamily: 'Inter', fontWeight: 500 }}>
                     Ver →
                   </button>
                 </td>
@@ -165,34 +168,32 @@ export default function Receipts() {
 
       <Drawer open={!!selected} onClose={() => setSelected(null)} title="Comprovante">
         {selected && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <div className="label mb-1">Valor</div>
+                <div className="label" style={{ marginBottom: 4 }}>Valor</div>
                 <div className="value-lg">{currency(Number(selected.amount))}</div>
               </div>
               <div>
-                <div className="label mb-1">Data</div>
-                <div className="text-[14px] font-medium text-[#1A1A1A]">{format(new Date(selected.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}</div>
+                <div className="label" style={{ marginBottom: 4 }}>Data</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#FFF' }}>
+                  {format(new Date(selected.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}
+                </div>
               </div>
               <div>
-                <div className="label mb-1">Banco</div>
-                <div className="text-[13px] text-[#555]">{selected.bank}</div>
-              </div>
-              <div>
-                <div className="label mb-1">Status</div>
+                <div className="label" style={{ marginBottom: 4 }}>Status</div>
                 {statusEl(selected.status)}
               </div>
               {selected.notes && (
-                <div className="col-span-2">
-                  <div className="label mb-1">Observação</div>
-                  <div className="text-[13px] text-[#555]">{selected.notes}</div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div className="label" style={{ marginBottom: 4 }}>Observação</div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{selected.notes}</div>
                 </div>
               )}
             </div>
             <div className="divider" />
             <div>
-              <div className="label mb-3">Arquivo</div>
+              <div className="label" style={{ marginBottom: 12 }}>Arquivo</div>
               <FileViewer url={selected.file_url} fileType={selected.file_type} />
             </div>
           </div>

@@ -17,47 +17,49 @@ export function Drawer({ open, onClose, title, children, width = '480px' }: Draw
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 transition-opacity duration-200"
+        onClick={onClose}
         style={{
-          background: 'rgba(0,0,0,0.18)',
-          backdropFilter: 'blur(2px)',
+          position: 'fixed', inset: 0, zIndex: 40,
+          background: 'rgba(0,0,0,0.15)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 0.2s',
         }}
-        onClick={onClose}
       />
-
-      {/* Panel */}
       <div
-        className="fixed top-0 right-0 z-50 h-full flex flex-col"
         style={{
-          width,
-          background: '#FFFFFF',
-          boxShadow: '-8px 0 40px rgba(0,0,0,0.10)',
+          position: 'fixed', top: 0, right: 0, zIndex: 50,
+          height: '100%', width,
+          background: 'rgba(248, 246, 242, 0.82)',
+          backdropFilter: 'blur(28px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+          borderLeft: '1px solid rgba(255,255,255,0.70)',
+          boxShadow: '-8px 0 48px rgba(0,0,0,0.12)',
+          display: 'flex', flexDirection: 'column',
           transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
+          transition: 'transform 0.28s cubic-bezier(0.32,0.72,0,1)',
         }}
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-6 py-4 shrink-0"
-          style={{ borderBottom: '1px solid #F0F0F0' }}
-        >
-          <span className="text-[14px] font-semibold text-[#1A1A1A] tracking-tight">{title}</span>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#AAAAAA] hover:text-[#1A1A1A] hover:bg-[#F5F5F5] transition-all text-lg leading-none"
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '18px 24px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A1A', letterSpacing: '-0.01em' }}>{title}</span>
+          <button onClick={onClose} style={{
+            width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, color: '#AAAAAA', background: 'transparent', border: 'none', cursor: 'pointer',
+            transition: 'background 0.15s, color 0.15s',
+          }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.background = 'rgba(0,0,0,0.06)'; (e.target as HTMLElement).style.color = '#1A1A1A' }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; (e.target as HTMLElement).style.color = '#AAAAAA' }}
           >
             ×
           </button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {children}
-        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>{children}</div>
       </div>
     </>
   )

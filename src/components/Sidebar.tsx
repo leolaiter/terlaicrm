@@ -2,11 +2,10 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const NAV = [
-  { to: '/',             label: 'Dashboard',    icon: '⊡', end: true },
-  { to: '/comprovantes', label: 'Comprovantes',  icon: '◧', end: false },
-  { to: '/dinamicas',    label: 'Dinâmicas',     icon: '⊞', end: false },
+  { to: '/',             label: 'Dashboard',   icon: '⊡', end: true },
+  { to: '/comprovantes', label: 'Comprovantes', icon: '◧', end: false },
+  { to: '/dinamicas',    label: 'Dinâmicas',    icon: '⊞', end: false },
 ]
-
 const ADMIN_NAV = [
   { to: '/relatorios', label: 'Relatórios', icon: '◈' },
   { to: '/admin',      label: 'Admin',      icon: '◉' },
@@ -27,26 +26,32 @@ export function Sidebar() {
 
   return (
     <aside
-      className="w-[228px] shrink-0 h-screen flex flex-col sticky top-0"
-      style={{ background: '#FFFFFF', borderRight: '1px solid #E5E5E5' }}
+      className="w-[220px] shrink-0 h-screen flex flex-col sticky top-0"
+      style={{
+        background: 'rgba(255,255,255,0.52)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderRight: '1px solid rgba(255,255,255,0.70)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.06)',
+      }}
     >
       {/* Logo */}
-      <div className="px-5 pt-6 pb-5" style={{ borderBottom: '1px solid #F0F0F0' }}>
+      <div className="px-5 pt-6 pb-5" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0"
             style={{ background: '#1A1A1A' }}
           >
             T
           </div>
           <div>
-            <div className="text-[13px] font-semibold text-[#1A1A1A] tracking-tight leading-none">TERLAI</div>
-            <div className="text-[10px] text-[#BBBBBB] tracking-widest uppercase mt-0.5">System</div>
+            <div className="text-[14px] font-semibold text-[#1A1A1A] tracking-tight leading-none">TERLAI</div>
+            <div className="text-[10px] tracking-widest uppercase mt-0.5" style={{ color: '#CCCCCC' }}>System</div>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
         {NAV.map(item => (
           <NavLink
@@ -54,28 +59,23 @@ export function Sidebar() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-150 group ${
+              `flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-[#F4F4F4] text-[#1A1A1A]'
-                  : 'text-[#888888] hover:bg-[#F8F8F8] hover:text-[#1A1A1A]'
+                  ? 'text-[#1A1A1A]'
+                  : 'text-[#999999] hover:text-[#1A1A1A]'
               }`
             }
+            style={({ isActive }) => isActive ? {
+              background: 'rgba(255,255,255,0.75)',
+              boxShadow: '0 1px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)',
+            } : undefined}
           >
             {({ isActive }) => (
               <>
-                <span
-                  className="text-[15px] leading-none transition-opacity"
-                  style={{ opacity: isActive ? 1 : 0.5 }}
-                >
+                <span className="text-base leading-none" style={{ opacity: isActive ? 0.9 : 0.4 }}>
                   {item.icon}
                 </span>
                 {item.label}
-                {isActive && (
-                  <div
-                    className="ml-auto w-1 h-1 rounded-full"
-                    style={{ background: '#1A1A1A' }}
-                  />
-                )}
               </>
             )}
           </NavLink>
@@ -91,22 +91,21 @@ export function Sidebar() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-[13px] font-medium transition-all duration-150 ${
-                    isActive
-                      ? 'bg-[#F4F4F4] text-[#1A1A1A]'
-                      : 'text-[#888888] hover:bg-[#F8F8F8] hover:text-[#1A1A1A]'
+                  `flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all duration-150 ${
+                    isActive ? 'text-[#1A1A1A]' : 'text-[#999999] hover:text-[#1A1A1A]'
                   }`
                 }
+                style={({ isActive }) => isActive ? {
+                  background: 'rgba(255,255,255,0.75)',
+                  boxShadow: '0 1px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)',
+                } : undefined}
               >
                 {({ isActive }) => (
                   <>
-                    <span className="text-[15px] leading-none" style={{ opacity: isActive ? 1 : 0.5 }}>
+                    <span className="text-base leading-none" style={{ opacity: isActive ? 0.9 : 0.4 }}>
                       {item.icon}
                     </span>
                     {item.label}
-                    {isActive && (
-                      <div className="ml-auto w-1 h-1 rounded-full" style={{ background: '#1A1A1A' }} />
-                    )}
                   </>
                 )}
               </NavLink>
@@ -115,12 +114,12 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* User footer */}
-      <div className="px-4 py-4" style={{ borderTop: '1px solid #F0F0F0' }}>
+      {/* User */}
+      <div className="px-4 py-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-3">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-[#666] shrink-0"
-            style={{ background: '#F0F0F0' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
+            style={{ background: 'rgba(0,0,0,0.08)', color: '#666' }}
           >
             {initials}
           </div>
@@ -128,15 +127,13 @@ export function Sidebar() {
             <div className="text-[12.5px] font-medium text-[#1A1A1A] truncate leading-tight">
               {profile?.full_name ?? 'Usuário'}
             </div>
-            <div className="text-[10.5px] text-[#BBBBBB] uppercase tracking-wider mt-0.5">
+            <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: '#CCCCCC' }}>
               {profile?.role}
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="text-[#CCCCCC] hover:text-[#999] transition-colors text-base leading-none shrink-0"
-            title="Sair"
-          >
+          <button onClick={handleSignOut} title="Sair"
+            className="text-base leading-none transition-opacity hover:opacity-60"
+            style={{ color: '#CCCCCC' }}>
             →
           </button>
         </div>

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(writing-plans)",
+      "Skill(brainstorming)",
+      "Bash(npm create *)",
+      "Bash(npx create-vite@latest . --template react-ts)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

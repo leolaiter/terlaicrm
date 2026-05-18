@@ -418,6 +418,7 @@ export default function Planilhas() {
   const [creatingSheet, setCreatingSheet] = useState(false)
   const [renamingId, setRenamingId]     = useState<string | null>(null)
   const [renameDraft, setRenameDraft]   = useState('')
+  const [sheetRefreshKey, setSheetRefreshKey] = useState(0)
   const seeded = useRef(false)
 
   async function loadSheets() {
@@ -490,6 +491,39 @@ export default function Planilhas() {
     if (activeId === id) setActiveId(remaining[0]?.id ?? null)
   }
 
+  async function clearData() {
+    if (!activeId) return
+    const name = sheets.find(s => s.id === activeId)?.name ?? 'planilha'
+    if (!window.confirm(`Apagar todos os dados de "${name}"?\nAs colunas serão mantidas.`)) return
+    await supabase.from('sheet_rows').delete().eq('sheet_id', activeId)
+    setSheetRefreshKey(k => k + 1)
+  }
+
+  async function duplicateStructure() {
+    if (!profile || !activeId) return
+    const current = sheets.find(s => s.id === activeId)
+    if (!current) return
+
+    const { data: newSheet } = await supabase
+      .from('sheets')
+      .insert({ user_id: profile.id, name: `${current.name} (cópia)` })
+      .select().single()
+    if (!newSheet) return
+
+    const { data: cols } = await supabase
+      .from('sheet_columns').select('*').eq('sheet_id', activeId).order('position')
+    if (cols && cols.length > 0) {
+      await supabase.from('sheet_columns').insert(
+        (cols as SheetColumn[]).map(({ id: _id, sheet_id: _sid, ...rest }) => ({
+          ...rest, sheet_id: (newSheet as Sheet).id,
+        }))
+      )
+    }
+
+    setSheets(prev => [...prev, newSheet as Sheet])
+    setActiveId((newSheet as Sheet).id)
+  }
+
   return (
     <div style={{ padding: 28, maxWidth: 1400 }}>
       <div className="page-header">
@@ -511,7 +545,6 @@ export default function Planilhas() {
             display: 'flex', alignItems: 'center', gap: 2,
             padding: '10px 16px 0',
             borderBottom: '1px solid rgba(255,255,255,0.07)',
-            overflowX: 'auto',
           }}>
             {sheets.map(sheet => (
               <div
@@ -597,12 +630,47 @@ export default function Planilhas() {
             >
               +
             </button>
+
+            {/* Ações da planilha ativa */}
+            {activeId && (
+              <>
+                <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.08)', margin: '0 6px', flexShrink: 0 }} />
+                <button
+                  onClick={duplicateStructure}
+                  title="Duplicar estrutura (cria nova planilha com as mesmas colunas, sem dados)"
+                  style={{
+                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.28)', fontSize: 11.5, fontFamily: 'Inter',
+                    padding: '4px 8px', borderRadius: 6, transition: 'color 0.12s', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.70)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.28)' }}
+                >
+                  ⧉ Duplicar estrutura
+                </button>
+                <button
+                  onClick={clearData}
+                  title="Apagar todos os dados (mantém as colunas)"
+                  style={{
+                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.28)', fontSize: 11.5, fontFamily: 'Inter',
+                    padding: '4px 8px', borderRadius: 6, transition: 'color 0.12s', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(239,68,68,0.75)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.28)' }}
+                >
+                  ⊘ Limpar dados
+                </button>
+              </>
+            )}
           </div>
 
           {/* Sheet content */}
           <div style={{ padding: '0 0 16px' }}>
             {activeId ? (
-              <EditableSheet key={activeId} sheetId={activeId} />
+              <EditableSheet key={`${activeId}-${sheetRefreshKey}`} sheetId={activeId} />
             ) : (
               <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}>
                 Crie uma planilha para começar

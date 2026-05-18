@@ -64,7 +64,7 @@ export default function Dashboard() {
       let q = supabase
         .from('receipts')
         .select('*, profiles(id, full_name, email, role, active, created_at)')
-        .gte('deposit_date', fromStr).eq('status', 'approved')
+        .gte('deposit_date', fromStr).neq('status', 'rejected')
       if (profile!.role !== 'admin') q = q.eq('user_id', profile!.id)
 
       const [{ data: r }, { data: s }] = await Promise.all([
@@ -101,8 +101,8 @@ export default function Dashboard() {
   })
 
   const activeInPeriod = sellerStats.filter(s => s.count > 0).length
-  const totalSellers   = Math.max(sellers.length, 1)
-  const efficiency     = Math.round((activeInPeriod / totalSellers) * 100)
+  const totalSellers   = sellers.length
+  const efficiency     = totalSellers > 0 ? Math.round((activeInPeriod / totalSellers) * 100) : 0
   const donutData = [
     { value: activeInPeriod },
     { value: Math.max(totalSellers - activeInPeriod, 0) },

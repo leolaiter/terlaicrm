@@ -24,6 +24,28 @@ const BOARD2_COLS = [
   { id: 'DOM', label: 'Dom' },
 ]
 
+const CATEGORY_META: Record<string, { label: string; color: string }> = {
+  alavancagem: { label: 'Alavancagem de Capital', color: '#3B82F6' },
+  recuperacao: { label: 'Recuperação de Capital', color: '#F97316' },
+  entrada:     { label: 'Entrada Assertiva',       color: '#22C55E' },
+  disparos:    { label: 'Disparos',                color: '#EAB308' },
+}
+
+function CategoryBadge({ categoryKey }: { categoryKey: string }) {
+  const meta = CATEGORY_META[categoryKey]
+  if (!meta) return null
+  return (
+    <div style={{
+      display: 'inline-block', fontSize: 9, fontWeight: 700,
+      letterSpacing: '0.07em', textTransform: 'uppercase',
+      color: '#FFF', background: meta.color,
+      borderRadius: 5, padding: '2px 7px', marginBottom: 6,
+    }}>
+      {meta.label}
+    </div>
+  )
+}
+
 /* ─── Sortable Card ────────────────────────────── */
 function KanbanCard({ card, onDetail, onAttachment }: {
   card: DynamicsCard
@@ -50,15 +72,7 @@ function KanbanCard({ card, onDetail, onAttachment }: {
         boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
       }}
     >
-      {card.category && (
-        <div style={{
-          display: 'inline-block', fontSize: 9, fontWeight: 600, letterSpacing: '0.08em',
-          textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
-          background: 'rgba(255,255,255,0.07)', borderRadius: 5, padding: '2px 6px', marginBottom: 6,
-        }}>
-          {card.category}
-        </div>
-      )}
+      {card.category && <CategoryBadge categoryKey={card.category} />}
       <div style={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)', lineHeight: 1.35 }}>{card.title}</div>
       {card.description && (
         <div style={{
@@ -125,6 +139,7 @@ function FloatingCard({ card }: { card: DynamicsCard }) {
       padding: '10px 12px', width: 200,
       transform: 'rotate(2deg) scale(1.04)', opacity: 0.96, pointerEvents: 'none',
     }}>
+      {card.category && <CategoryBadge categoryKey={card.category} />}
       <div style={{ fontSize: 12.5, fontWeight: 500, color: '#FFF' }}>{card.title}</div>
       {card.description && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{card.description}</div>}
     </div>
@@ -141,13 +156,13 @@ export default function Dynamics() {
   const [attachCard, setAttachCard] = useState<DynamicsCard | null>(null)
   const [modal, setModal]           = useState(false)
 
-  const [title, setTitle]     = useState('')
-  const [description, setDesc] = useState('')
-  const [category, setCat]    = useState('')
-  const [colId, setColId]     = useState(BOARD1_COLS[0].id)
+  const [title, setTitle]           = useState('')
+  const [description, setDesc]      = useState('')
+  const [category, setCat]          = useState(BOARD1_COLS[0].id)
+  const [colId, setColId]           = useState(BOARD1_COLS[0].id)
   const [targetBoard, setTargetBoard] = useState<'board1' | 'board2'>('board1')
-  const [file, setFile]       = useState<File | null>(null)
-  const [saving, setSaving]   = useState(false)
+  const [file, setFile]             = useState<File | null>(null)
+  const [saving, setSaving]         = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -192,20 +207,15 @@ export default function Dynamics() {
     const activeId = String(active.id)
     setActiveCard(null)
 
-    // No valid drop target — revert card to where it started
     if (!over) {
-      if (dragOrigin) {
-        setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
-      }
+      if (dragOrigin) setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
       setDragOrigin(null)
       return
     }
 
     const dest = resolveCol(String(over.id))
     if (!dest) {
-      if (dragOrigin) {
-        setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
-      }
+      if (dragOrigin) setCards(prev => prev.map(c => c.id === activeId ? { ...c, ...dragOrigin } : c))
       setDragOrigin(null)
       return
     }
@@ -224,6 +234,12 @@ export default function Dynamics() {
       .eq('id', activeId)
   }
 
+  function handleBoardChange(board: 'board1' | 'board2') {
+    setTargetBoard(board)
+    setColId(board === 'board1' ? BOARD1_COLS[0].id : BOARD2_COLS[0].id)
+    setCat(BOARD1_COLS[0].id)
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -238,12 +254,18 @@ export default function Dynamics() {
         attachment_type = file.type
       }
     }
+
+    // Board 1: category comes from the column itself
+    // Board 2: category comes from the select the user chose
+    const categoryValue = targetBoard === 'board1' ? colId : category
+
     const pos = cards.filter(c => c.board === targetBoard && c.column_id === colId).length
     await supabase.from('dynamics_cards').insert({
-      board: targetBoard, column_id: colId, title, description, category,
+      board: targetBoard, column_id: colId, title, description,
+      category: categoryValue,
       attachment_url, attachment_name, attachment_type, position: pos, created_by: profile?.id,
     })
-    setTitle(''); setDesc(''); setCat(''); setFile(null)
+    setTitle(''); setDesc(''); setCat(BOARD1_COLS[0].id); setFile(null)
     if (fileRef.current) fileRef.current.value = ''
     setModal(false); setSaving(false); load()
   }
@@ -325,13 +347,26 @@ export default function Dynamics() {
         </DragOverlay>
       </DndContext>
 
-      {/* Drawers */}
+      {/* Detail drawer */}
       <Drawer open={!!detailCard} onClose={() => setDetailCard(null)} title="Detalhes">
         {detailCard && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div><div className="label" style={{ marginBottom: 4 }}>Título</div><div style={{ fontSize: 16, fontWeight: 600, color: '#FFF' }}>{detailCard.title}</div></div>
-            {detailCard.description && <div><div className="label" style={{ marginBottom: 4 }}>Descrição</div><div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{detailCard.description}</div></div>}
-            {detailCard.category && <div><div className="label" style={{ marginBottom: 4 }}>Categoria</div><div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{detailCard.category}</div></div>}
+            {detailCard.category && CATEGORY_META[detailCard.category] && (
+              <div>
+                <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
+                <CategoryBadge categoryKey={detailCard.category} />
+              </div>
+            )}
+            <div>
+              <div className="label" style={{ marginBottom: 4 }}>Título</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#FFF' }}>{detailCard.title}</div>
+            </div>
+            {detailCard.description && (
+              <div>
+                <div className="label" style={{ marginBottom: 4 }}>Descrição</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{detailCard.description}</div>
+              </div>
+            )}
             {detailCard.attachment_url && (
               <div>
                 <div className="label" style={{ marginBottom: 10 }}>Anexo</div>
@@ -359,19 +394,48 @@ export default function Dynamics() {
                 border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 18, cursor: 'pointer' }}>×</button>
             </div>
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>Board</div>
-                <select className="input" value={targetBoard} onChange={e => { setTargetBoard(e.target.value as 'board1'|'board2'); setColId(e.target.value === 'board1' ? BOARD1_COLS[0].id : BOARD2_COLS[0].id) }}>
+                <select className="input" value={targetBoard} onChange={e => handleBoardChange(e.target.value as 'board1'|'board2')}>
                   <option value="board1">Estratégias</option>
                   <option value="board2">Planejamento Semanal</option>
                 </select>
               </div>
+
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>Coluna</div>
                 <select className="input" value={colId} onChange={e => setColId(e.target.value)}>
                   {(targetBoard === 'board1' ? BOARD1_COLS : BOARD2_COLS).map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
+
+              {/* Category: auto for board1, user-select for board2 */}
+              {targetBoard === 'board1' ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 10, padding: '8px 12px',
+                }}>
+                  <div className="label" style={{ margin: 0 }}>Categoria</div>
+                  <CategoryBadge categoryKey={colId} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>automática</span>
+                </div>
+              ) : (
+                <div>
+                  <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
+                  <select className="input" value={category} onChange={e => setCat(e.target.value)}>
+                    {BOARD1_COLS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  </select>
+                  {/* Preview */}
+                  {category && CATEGORY_META[category] && (
+                    <div style={{ marginTop: 6 }}>
+                      <CategoryBadge categoryKey={category} />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>Título</div>
                 <input required className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Nome da dinâmica" />
@@ -382,14 +446,11 @@ export default function Dynamics() {
                   placeholder="Descreva a dinâmica..." style={{ resize: 'none' }} />
               </div>
               <div>
-                <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
-                <input className="input" value={category} onChange={e => setCat(e.target.value)} placeholder="ex: Meta, Reunião..." />
-              </div>
-              <div>
                 <div className="label" style={{ marginBottom: 6 }}>Anexo</div>
                 <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={e => setFile(e.target.files?.[0] ?? null)}
                   className="input" style={{ paddingTop: 6 }} />
               </div>
+
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
                 <button type="button" onClick={() => setModal(false)} className="btn-secondary">Cancelar</button>
                 <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Salvando...' : 'Criar card'}</button>

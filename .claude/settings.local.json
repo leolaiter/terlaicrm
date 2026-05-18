@@ -16,7 +16,12 @@
       "Bash(git push *)",
       "Bash(npx vite *)",
       "Bash(ping -n 3 127.0.0.1)",
-      "WebFetch(domain:br.pinterest.com)"
+      "WebFetch(domain:br.pinterest.com)",
+      "Bash(ls supabase/)",
+      "Bash(ls supabase/migrations/)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\pc\\\\OneDrive\\\\Área de Trabalho\\\\terlaicrm\\\\supabase\" -Recurse -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\pc\\\\OneDrive\\\\Área de Trabalho\\\\terlaicrm\" -Recurse | Where-Object { $_.Extension -eq \".sql\" } | ForEach-Object { $_.FullName })"
     ]
   }
 }

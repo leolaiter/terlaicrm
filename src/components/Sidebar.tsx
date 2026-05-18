@@ -5,6 +5,7 @@ const NAV = [
   { to: '/',             icon: '⊡', label: 'Dashboard',   end: true },
   { to: '/comprovantes', icon: '◧', label: 'Comprovantes', end: false },
   { to: '/dinamicas',    icon: '⊞', label: 'Dinâmicas',    end: false },
+  { to: '/planilhas',   icon: '▦', label: 'Planilhas',    end: false },
 ]
 const ADMIN_NAV = [
   { to: '/relatorios', icon: '◈', label: 'Relatórios' },

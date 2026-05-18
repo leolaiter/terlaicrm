@@ -1,13 +1,14 @@
--- =============================================
--- TERLAI SYSTEM — Correção do trigger
--- Execute este SQL no Supabase SQL Editor
--- =============================================
+-- ============================================================
+-- TERLAI SYSTEM — Correção do trigger (Arquivo 2 de 3)
+-- Execute APÓS supabase_setup.sql
+-- Seguro para re-rodar: usa DROP IF EXISTS antes de recriar
+-- ============================================================
 
--- Remove trigger e função antigos
+-- Remove versão anterior
 drop trigger if exists on_auth_user_created on auth.users;
-drop function if exists handle_new_user();
+drop function if exists public.handle_new_user();
 
--- Recria a função com search_path correto (necessário no Supabase)
+-- Recria com search_path correto
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -42,7 +43,7 @@ begin
 end;
 $$;
 
--- Recria o trigger
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row

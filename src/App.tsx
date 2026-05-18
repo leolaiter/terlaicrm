@@ -8,6 +8,7 @@ import Receipts from './pages/Receipts'
 import Dynamics from './pages/Dynamics'
 import Reports from './pages/Reports'
 import Admin from './pages/Admin'
+import Planilhas from './pages/Planilhas'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="comprovantes" element={<Receipts />} />
           <Route path="dinamicas" element={<Dynamics />} />
+          <Route path="planilhas" element={<Planilhas />} />
           <Route
             path="relatorios"
             element={

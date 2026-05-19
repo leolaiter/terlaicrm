@@ -1,12 +1,22 @@
 export type Role = 'admin' | 'vendedor'
 
+export interface Project {
+  id: string
+  name: string
+  slug: string
+  invite_token: string
+  created_at: string
+}
+
 export interface Profile {
   id: string
   full_name: string
   email: string
   role: Role
   active: boolean
+  project_id: string | null
   created_at: string
+  projects?: Project
 }
 
 export type ReceiptStatus = 'pending' | 'approved' | 'rejected'
@@ -14,6 +24,7 @@ export type ReceiptStatus = 'pending' | 'approved' | 'rejected'
 export interface Receipt {
   id: string
   user_id: string
+  project_id: string | null
   file_url: string
   file_type: string
   amount: number
@@ -29,6 +40,7 @@ export type BoardType = 'board1' | 'board2'
 
 export interface DynamicsCard {
   id: string
+  project_id: string | null
   board: BoardType
   column_id: string
   title: string
@@ -45,6 +57,7 @@ export interface DynamicsCard {
 export interface WeeklyPlanner {
   id: string
   card_id: string
+  project_id: string | null
   day_of_week: string
   position: number
   scheduled_date: string | null

@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 import { supabase } from '../lib/supabase'
+import { useProject } from '../hooks/useProject'
 import type { Receipt, DynamicsCard } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
@@ -36,24 +37,27 @@ function ChartTooltip({ active, payload, label }: {
 }
 
 export default function Reports() {
+  const { activeProject } = useProject()
   const [receipts, setReceipts]       = useState<Receipt[]>([])
   const [dynamics, setDynamics]       = useState<DynamicsCard[]>([])
   const [loading, setLoading]         = useState(true)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!activeProject) { setReceipts([]); setDynamics([]); setLoading(false); return }
+    setLoading(true)
     async function load() {
       const from = format(subDays(startOfToday(), 30), 'yyyy-MM-dd')
       const [{ data: r }, { data: d }] = await Promise.all([
-        supabase.from('receipts').select('*').gte('deposit_date', from).neq('status', 'rejected'),
-        supabase.from('dynamics_cards').select('*'),
+        supabase.from('receipts').select('*').eq('project_id', activeProject!.id).gte('deposit_date', from).neq('status', 'rejected'),
+        supabase.from('dynamics_cards').select('*').eq('project_id', activeProject!.id),
       ])
       setReceipts((r as Receipt[]) ?? [])
       setDynamics((d as DynamicsCard[]) ?? [])
       setLoading(false)
     }
     load()
-  }, [])
+  }, [activeProject?.id])
 
   const dayStats = DAYS.map((day, i) => {
     const dr = receipts.filter(r => getDay(new Date(r.deposit_date + 'T00:00:00')) === i)

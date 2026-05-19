@@ -8,6 +8,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useProject } from '../hooks/useProject'
 import type { DynamicsCard } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
@@ -182,6 +183,7 @@ function FloatingCard({ card }: { card: DynamicsCard }) {
 /* ─── Page ───────────────────────────────────────── */
 export default function Dynamics() {
   const { profile } = useAuth()
+  const { activeProject } = useProject()
   const [cards, setCards]           = useState<DynamicsCard[]>([])
   const [activeCard, setActiveCard] = useState<DynamicsCard | null>(null)
   const [dragOrigin, setDragOrigin] = useState<{ board: 'board1'|'board2'; column_id: string; position: number } | null>(null)
@@ -201,10 +203,11 @@ export default function Dynamics() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   async function load() {
-    const { data } = await supabase.from('dynamics_cards').select('*').order('position')
+    if (!activeProject) { setCards([]); return }
+    const { data } = await supabase.from('dynamics_cards').select('*').eq('project_id', activeProject.id).order('position')
     setCards((data as DynamicsCard[]) ?? [])
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [activeProject?.id])
 
   async function handleDelete(card: DynamicsCard) {
     if (!window.confirm(`Excluir "${card.title}"?`)) return
@@ -302,6 +305,7 @@ export default function Dynamics() {
     await supabase.from('dynamics_cards').insert({
       board: targetBoard, column_id: colId, title, description,
       category: categoryValue,
+      project_id: activeProject?.id ?? profile?.project_id,
       attachment_url, attachment_name, attachment_type, position: pos, created_by: profile?.id,
     })
     setTitle(''); setDesc(''); setCat(BOARD1_COLS[0].id); setFile(null)

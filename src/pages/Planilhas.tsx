@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useProject } from '../hooks/useProject'
 
 interface Sheet {
   id: string
@@ -412,6 +413,7 @@ function EditableSheet({ sheetId }: { sheetId: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Planilhas() {
   const { profile } = useAuth()
+  const { activeProject } = useProject()
   const [sheets, setSheets]             = useState<Sheet[]>([])
   const [activeId, setActiveId]         = useState<string | null>(null)
   const [loading, setLoading]           = useState(true)
@@ -422,9 +424,11 @@ export default function Planilhas() {
   const seeded = useRef(false)
 
   async function loadSheets() {
+    if (!activeProject) { setSheets([]); setLoading(false); return [] }
     const { data } = await supabase
       .from('sheets')
       .select('*')
+      .eq('project_id', activeProject.id)
       .order('created_at')
     const list = (data as Sheet[]) ?? []
     setSheets(list)
@@ -441,7 +445,7 @@ export default function Planilhas() {
 
     const { data: sheet } = await supabase
       .from('sheets')
-      .insert({ user_id: profile.id, name: 'Leads' })
+      .insert({ user_id: profile.id, project_id: activeProject?.id ?? profile.project_id, name: 'Leads' })
       .select().single()
     if (!sheet) return
 
@@ -458,14 +462,14 @@ export default function Planilhas() {
     setActiveId((sheet as Sheet).id)
   }
 
-  useEffect(() => { if (profile) seedLeadsSheet() }, [profile])
+  useEffect(() => { if (profile && activeProject) seedLeadsSheet() }, [profile, activeProject?.id])
 
   async function createSheet() {
     if (!profile) return
     setCreatingSheet(true)
     const { data } = await supabase
       .from('sheets')
-      .insert({ user_id: profile.id, name: 'Nova Planilha' })
+      .insert({ user_id: profile.id, project_id: activeProject?.id ?? profile.project_id, name: 'Nova Planilha' })
       .select().single()
     if (data) {
       setSheets(prev => [...prev, data as Sheet])

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { supabase } from '../lib/supabase'
-import type { Profile, Receipt } from '../types'
+import type { Profile, Receipt, Project } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
 
@@ -12,18 +12,26 @@ function currency(v: number) {
 export default function Admin() {
   const [users, setUsers]       = useState<Profile[]>([])
   const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading]   = useState(true)
   const [tab, setTab]           = useState<'users' | 'receipts'>('users')
   const [selected, setSelected] = useState<Receipt | null>(null)
 
   async function loadData() {
-    const [{ data: u }, { data: r }] = await Promise.all([
+    const [{ data: u }, { data: r }, { data: p }] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at'),
       supabase.from('receipts').select('*, profiles(id, full_name, email, role, active, created_at)').order('created_at', { ascending: false }),
+      supabase.from('projects').select('*').order('name'),
     ])
     setUsers((u as Profile[]) ?? [])
     setReceipts((r as Receipt[]) ?? [])
+    setProjects((p as Project[]) ?? [])
     setLoading(false)
+  }
+
+  async function updateProject(id: string, project_id: string | null) {
+    await supabase.from('profiles').update({ project_id }).eq('id', id)
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, project_id } : u))
   }
 
   useEffect(() => { loadData() }, [])
@@ -72,6 +80,7 @@ export default function Admin() {
             <thead>
               <tr>
                 <th>Usuário</th>
+                <th>Projeto</th>
                 <th>Role</th>
                 <th>Status</th>
                 <th>Desde</th>
@@ -91,6 +100,16 @@ export default function Admin() {
                         <div className="text-[11px] text-[#AAAAAA]">{u.email}</div>
                       </div>
                     </div>
+                  </td>
+                  <td>
+                    <select
+                      value={u.project_id || ''}
+                      onChange={e => updateProject(u.id, e.target.value || null)}
+                      className="text-[12px] px-2 py-1 rounded-md border border-[rgba(0,0,0,0.08)] bg-white text-[#1A1A1A] outline-none hover:border-[#1A1A1A] transition-colors"
+                    >
+                      <option value="">— sem projeto —</option>
+                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
                   </td>
                   <td>
                     <select

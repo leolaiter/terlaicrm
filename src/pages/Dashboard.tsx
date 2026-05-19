@@ -6,6 +6,7 @@ import {
 } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useProject } from '../hooks/useProject'
 import { PeriodFilterBar } from '../components/ui/PeriodFilter'
 import type { PeriodFilter, Receipt, Profile } from '../types'
 
@@ -51,6 +52,7 @@ function KpiCard({ icon, label, value, sub }: { icon: string; label: string; val
 
 export default function Dashboard() {
   const { profile } = useAuth()
+  const { activeProject } = useProject()
   const [period, setPeriod] = useState<PeriodFilter>('7d')
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [sellers, setSellers]   = useState<Profile[]>([])
@@ -58,19 +60,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!profile) return
+    if (!activeProject) { setReceipts([]); setSellers([]); setLoading(false); return }
     setLoading(true)
     async function load() {
       const fromStr = format(getFrom(period), 'yyyy-MM-dd')
       let q = supabase
         .from('receipts')
         .select('*, profiles(id, full_name, email, role, active, created_at)')
+        .eq('project_id', activeProject!.id)
         .gte('deposit_date', fromStr).neq('status', 'rejected')
       if (profile!.role !== 'admin') q = q.eq('user_id', profile!.id)
 
       const [{ data: r }, { data: s }] = await Promise.all([
         q,
         profile!.role === 'admin'
-          ? supabase.from('profiles').select('*').eq('role', 'vendedor').eq('active', true)
+          ? supabase.from('profiles').select('*').eq('role', 'vendedor').eq('active', true).eq('project_id', activeProject!.id)
           : Promise.resolve({ data: [] }),
       ])
       setReceipts((r as Receipt[]) ?? [])
@@ -78,7 +82,7 @@ export default function Dashboard() {
       setLoading(false)
     }
     load()
-  }, [period, profile])
+  }, [period, profile, activeProject?.id])
 
   const totalAmount   = receipts.reduce((s, r) => s + Number(r.amount), 0)
   const uniqueSellers = new Set(receipts.map(r => r.user_id)).size

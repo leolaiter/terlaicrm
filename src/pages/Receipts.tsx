@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useProject } from '../hooks/useProject'
 import type { Receipt } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
@@ -12,6 +13,7 @@ function currency(v: number) {
 
 export default function Receipts() {
   const { profile } = useAuth()
+  const { activeProject } = useProject()
   const [receipts, setReceipts]   = useState<Receipt[]>([])
   const [loading, setLoading]     = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -25,9 +27,11 @@ export default function Receipts() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
+    if (!activeProject) { setReceipts([]); setLoading(false); return }
     let q = supabase
       .from('receipts')
       .select('*, profiles(id, full_name, email, role, active, created_at)')
+      .eq('project_id', activeProject.id)
       .order('created_at', { ascending: false })
     if (profile?.role !== 'admin') q = q.eq('user_id', profile?.id ?? '')
     const { data } = await q
@@ -35,7 +39,7 @@ export default function Receipts() {
     setLoading(false)
   }
 
-  useEffect(() => { if (profile) load() }, [profile])
+  useEffect(() => { if (profile) load() }, [profile, activeProject?.id])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,7 +54,9 @@ export default function Receipts() {
 
     const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path)
     await supabase.from('receipts').insert({
-      user_id: profile?.id, file_url: urlData.publicUrl, file_type: file.type,
+      user_id: profile?.id,
+      project_id: activeProject?.id ?? profile?.project_id,
+      file_url: urlData.publicUrl, file_type: file.type,
       amount: parseFloat(amount.replace(',', '.')), deposit_date: date, notes, status: 'pending',
     })
 

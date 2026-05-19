@@ -3,12 +3,14 @@ import { AppLayout } from './components/AppLayout'
 import { ProtectedRoute, AdminRoute } from './router/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import InviteJoin from './pages/InviteJoin'
 import Dashboard from './pages/Dashboard'
 import Receipts from './pages/Receipts'
 import Dynamics from './pages/Dynamics'
 import Reports from './pages/Reports'
 import Admin from './pages/Admin'
 import Planilhas from './pages/Planilhas'
+import Projects from './pages/Projects'
 
 export default function App() {
   return (
@@ -16,6 +18,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/convite/:token" element={<InviteJoin />} />
         <Route
           path="/"
           element={
@@ -28,6 +31,14 @@ export default function App() {
           <Route path="comprovantes" element={<Receipts />} />
           <Route path="dinamicas" element={<Dynamics />} />
           <Route path="planilhas" element={<Planilhas />} />
+          <Route
+            path="projetos"
+            element={
+              <AdminRoute>
+                <Projects />
+              </AdminRoute>
+            }
+          />
           <Route
             path="relatorios"
             element={

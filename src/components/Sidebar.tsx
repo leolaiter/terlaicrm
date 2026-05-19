@@ -8,6 +8,7 @@ const NAV = [
   { to: '/planilhas',   icon: '▦', label: 'Planilhas',    end: false },
 ]
 const ADMIN_NAV = [
+  { to: '/projetos',   icon: '◇', label: 'Projetos' },
   { to: '/relatorios', icon: '◈', label: 'Relatórios' },
   { to: '/admin',      icon: '◉', label: 'Admin' },
 ]

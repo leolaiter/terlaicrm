@@ -46,7 +46,12 @@ export default function Login() {
                 required placeholder="seu@email.com" />
             </div>
             <div>
-              <div className="label" style={{ marginBottom: 6 }}>Senha</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div className="label" style={{ margin: 0 }}>Senha</div>
+                <Link to="/esqueci-senha" style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+                  Esqueci minha senha
+                </Link>
+              </div>
               <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)}
                 required placeholder="••••••••" />
             </div>

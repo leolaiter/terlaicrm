@@ -4,6 +4,8 @@ import { ProtectedRoute, AdminRoute } from './router/ProtectedRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import InviteJoin from './pages/InviteJoin'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Receipts from './pages/Receipts'
 import Dynamics from './pages/Dynamics'
@@ -19,6 +21,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/convite/:token" element={<InviteJoin />} />
+        <Route path="/esqueci-senha" element={<ForgotPassword />} />
+        <Route path="/redefinir-senha" element={<ResetPassword />} />
         <Route
           path="/"
           element={

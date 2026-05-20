@@ -9,51 +9,49 @@ import { CSS } from '@dnd-kit/utilities'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useProject } from '../hooks/useProject'
-import type { DynamicsCard } from '../types'
+import type { DynamicsCard, DynamicsCategory } from '../types'
 import { Drawer } from '../components/ui/Drawer'
 import { FileViewer } from '../components/ui/FileViewer'
 
-const BOARD1_COLS = [
-  { id: 'alavancagem', label: 'Alavancagem de Capital' },
-  { id: 'recuperacao', label: 'Recuperação de Capital' },
-  { id: 'entrada',     label: 'Entrada Assertiva' },
-  { id: 'disparos',    label: 'Disparos' },
-]
 const BOARD2_COLS = [
   { id: 'SEG', label: 'Seg' }, { id: 'TER', label: 'Ter' }, { id: 'QUA', label: 'Qua' },
   { id: 'QUI', label: 'Qui' }, { id: 'SEX', label: 'Sex' }, { id: 'SAB', label: 'Sáb' },
   { id: 'DOM', label: 'Dom' },
 ]
 
-const CATEGORY_META: Record<string, { label: string; color: string }> = {
-  alavancagem: { label: 'Alavancagem de Capital', color: '#3B82F6' },
-  recuperacao: { label: 'Recuperação de Capital', color: '#F97316' },
-  entrada:     { label: 'Entrada Assertiva',       color: '#22C55E' },
-  disparos:    { label: 'Disparos',                color: '#EAB308' },
-}
+const PRESET_COLORS = ['#3B82F6', '#F97316', '#22C55E', '#EAB308', '#A855F7', '#EC4899', '#06B6D4', '#EF4444', '#84CC16', '#F59E0B']
 
-function CategoryBadge({ categoryKey }: { categoryKey: string }) {
-  const meta = CATEGORY_META[categoryKey]
-  if (!meta) return null
+function CategoryBadge({ categoryKey, categories }: { categoryKey?: string | null; categories: DynamicsCategory[] }) {
+  const cat = categoryKey ? categories.find(c => c.slug === categoryKey) : null
+  if (!cat) return (
+    <div style={{
+      display: 'inline-block', fontSize: 9, fontWeight: 700,
+      letterSpacing: '0.07em', textTransform: 'uppercase',
+      color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: 5, padding: '2px 7px', marginBottom: 6,
+    }}>sem categoria</div>
+  )
   return (
     <div style={{
       display: 'inline-block', fontSize: 9, fontWeight: 700,
       letterSpacing: '0.07em', textTransform: 'uppercase',
-      color: '#FFF', background: meta.color,
+      color: '#FFF', background: cat.color,
       borderRadius: 5, padding: '2px 7px', marginBottom: 6,
     }}>
-      {meta.label}
+      {cat.name}
     </div>
   )
 }
 
 /* ─── Sortable Card ────────────────────────────── */
-function KanbanCard({ card, onDetail, onAttachment, onDelete, canManage }: {
+function KanbanCard({ card, onDetail, onAttachment, onDelete, canManage, categories }: {
   card: DynamicsCard
   onDetail: (c: DynamicsCard) => void
   onAttachment: (c: DynamicsCard) => void
   onDelete: (c: DynamicsCard) => void
   canManage: boolean
+  categories: DynamicsCategory[]
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
 
@@ -75,7 +73,7 @@ function KanbanCard({ card, onDetail, onAttachment, onDelete, canManage }: {
         boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
       }}
     >
-      {card.category && <CategoryBadge categoryKey={card.category} />}
+      {card.category && <CategoryBadge categoryKey={card.category} categories={categories} />}
       <div style={{ fontSize: 12.5, fontWeight: 500, color: 'rgba(255,255,255,0.88)', lineHeight: 1.35 }}>{card.title}</div>
       {card.description && (
         <div style={{
@@ -136,31 +134,62 @@ function KanbanCard({ card, onDetail, onAttachment, onDelete, canManage }: {
 }
 
 /* ─── Column ────────────────────────────────────── */
-function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact, canManage }: {
+function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact, canManage, categories, onEditCategory, onDeleteCategory, color }: {
   colId: string; label: string; cards: DynamicsCard[]
   onDetail: (c: DynamicsCard) => void; onAttachment: (c: DynamicsCard) => void
   onDelete: (c: DynamicsCard) => void; compact?: boolean
   canManage: (c: DynamicsCard) => boolean
+  categories: DynamicsCategory[]
+  onEditCategory?: () => void
+  onDeleteCategory?: () => void
+  color?: string
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: colId })
 
+  // Mostra ~5 cards visíveis (~50px cada), o resto rola
+  const MAX_VISIBLE_CARDS = 5
+  const CARD_HEIGHT = compact ? 60 : 80
+  const maxHeight = MAX_VISIBLE_CARDS * CARD_HEIGHT + 20
+
   return (
     <div style={{ minWidth: compact ? 162 : 224, maxWidth: compact ? 162 : 224, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 2px' }}>
-        <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: 'rgba(255,255,255,0.70)', letterSpacing: '-0.01em' }}>{label}</span>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)',
-          borderRadius: 6, padding: '1px 6px', fontWeight: 500 }}>{cards.length}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '0 2px', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+          {color && (
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+          )}
+          <span style={{ fontSize: compact ? 11 : 12, fontWeight: 600, color: 'rgba(255,255,255,0.70)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.07)',
+            borderRadius: 6, padding: '1px 6px', fontWeight: 500 }}>{cards.length}</span>
+          {onEditCategory && (
+            <button onClick={onEditCategory} title="Editar setor"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: 2, fontSize: 11 }}>
+              ✎
+            </button>
+          )}
+          {onDeleteCategory && (
+            <button onClick={onDeleteCategory} title="Excluir setor"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', padding: 2, fontSize: 11 }}>
+              ×
+            </button>
+          )}
+        </div>
       </div>
       <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
         <div ref={setNodeRef} style={{
-          flex: 1, minHeight: compact ? 120 : 100, display: 'flex', flexDirection: 'column', gap: 6,
+          minHeight: compact ? 120 : 100,
+          maxHeight: cards.length > MAX_VISIBLE_CARDS ? maxHeight : undefined,
+          overflowY: cards.length > MAX_VISIBLE_CARDS ? 'auto' : undefined,
+          display: 'flex', flexDirection: 'column', gap: 6,
           padding: 8, borderRadius: 14,
           border: isOver ? '1.5px dashed rgba(212,196,41,0.55)' : '1.5px dashed rgba(255,255,255,0.08)',
           background: isOver ? 'rgba(212,196,41,0.05)' : 'rgba(255,255,255,0.02)',
           transition: 'background 0.12s, border-color 0.12s',
         }}>
           {cards.map(c => (
-            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} onDelete={onDelete} canManage={canManage(c)} />
+            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} onDelete={onDelete} canManage={canManage(c)} categories={categories} />
           ))}
         </div>
       </SortableContext>
@@ -169,7 +198,7 @@ function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact
 }
 
 /* ─── Overlay ────────────────────────────────────── */
-function FloatingCard({ card }: { card: DynamicsCard }) {
+function FloatingCard({ card, categories }: { card: DynamicsCard; categories: DynamicsCategory[] }) {
   return (
     <div style={{
       background: 'rgba(30,30,36,0.95)', border: '1px solid rgba(255,255,255,0.14)',
@@ -177,7 +206,7 @@ function FloatingCard({ card }: { card: DynamicsCard }) {
       padding: '10px 12px', width: 200,
       transform: 'rotate(2deg) scale(1.04)', opacity: 0.96, pointerEvents: 'none',
     }}>
-      {card.category && <CategoryBadge categoryKey={card.category} />}
+      {card.category && <CategoryBadge categoryKey={card.category} categories={categories} />}
       <div style={{ fontSize: 12.5, fontWeight: 500, color: '#FFF' }}>{card.title}</div>
       {card.description && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{card.description}</div>}
     </div>
@@ -189,17 +218,19 @@ export default function Dynamics() {
   const { profile } = useAuth()
   const { activeProject } = useProject()
   const [cards, setCards]           = useState<DynamicsCard[]>([])
+  const [categories, setCategories] = useState<DynamicsCategory[]>([])
   const [activeCard, setActiveCard] = useState<DynamicsCard | null>(null)
   const [dragOrigin, setDragOrigin] = useState<{ board: 'board1'|'board2'; column_id: string; position: number } | null>(null)
   const [detailCard, setDetailCard] = useState<DynamicsCard | null>(null)
   const [attachCard, setAttachCard] = useState<DynamicsCard | null>(null)
   const [modal, setModal]           = useState(false)
   const [editingCard, setEditingCard] = useState<DynamicsCard | null>(null)
+  const [categoryModal, setCategoryModal] = useState<{ open: boolean; editing?: DynamicsCategory | null }>({ open: false })
 
   const [title, setTitle]           = useState('')
   const [description, setDesc]      = useState('')
-  const [category, setCat]          = useState(BOARD1_COLS[0].id)
-  const [colId, setColId]           = useState(BOARD1_COLS[0].id)
+  const [category, setCat]          = useState('')
+  const [colId, setColId]           = useState('')
   const [targetBoard, setTargetBoard] = useState<'board1' | 'board2'>('board1')
   const [file, setFile]             = useState<File | null>(null)
   const [saving, setSaving]         = useState(false)
@@ -208,9 +239,18 @@ export default function Dynamics() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   async function load() {
-    if (!activeProject) { setCards([]); return }
-    const { data } = await supabase.from('dynamics_cards').select('*').eq('project_id', activeProject.id).order('position')
-    setCards((data as DynamicsCard[]) ?? [])
+    if (!activeProject) { setCards([]); setCategories([]); return }
+    const [{ data: c }, { data: cats }] = await Promise.all([
+      supabase.from('dynamics_cards').select('*').eq('project_id', activeProject.id).order('position'),
+      supabase.from('dynamics_categories').select('*').eq('project_id', activeProject.id).order('position'),
+    ])
+    setCards((c as DynamicsCard[]) ?? [])
+    const catList = (cats as DynamicsCategory[]) ?? []
+    setCategories(catList)
+    if (catList.length > 0 && !colId) {
+      setColId(catList[0].slug)
+      setCat(catList[0].slug)
+    }
   }
   useEffect(() => { load() }, [activeProject?.id])
 
@@ -220,11 +260,21 @@ export default function Dynamics() {
     await supabase.from('dynamics_cards').delete().eq('id', card.id)
   }
 
+  async function handleDeleteCategory(cat: DynamicsCategory) {
+    const cardsInCategory = cards.filter(c => c.column_id === cat.slug).length
+    const msg = cardsInCategory > 0
+      ? `Excluir setor "${cat.name}"? Os ${cardsInCategory} card(s) existente(s) ficarão sem categoria.`
+      : `Excluir setor "${cat.name}"?`
+    if (!window.confirm(msg)) return
+    await supabase.from('dynamics_categories').delete().eq('id', cat.id)
+    await load()
+  }
+
   const colCards = (board: 'board1' | 'board2', col: string) =>
     cards.filter(c => c.board === board && c.column_id === col).sort((a, b) => a.position - b.position)
 
   function resolveCol(id: string): { board: 'board1' | 'board2'; column_id: string } | null {
-    if (BOARD1_COLS.some(c => c.id === id)) return { board: 'board1', column_id: id }
+    if (categories.some(c => c.slug === id)) return { board: 'board1', column_id: id }
     if (BOARD2_COLS.some(c => c.id === id)) return { board: 'board2', column_id: id }
     const card = cards.find(c => c.id === id)
     return card ? { board: card.board, column_id: card.column_id } : null
@@ -283,8 +333,9 @@ export default function Dynamics() {
 
   function handleBoardChange(board: 'board1' | 'board2') {
     setTargetBoard(board)
-    setColId(board === 'board1' ? BOARD1_COLS[0].id : BOARD2_COLS[0].id)
-    setCat(BOARD1_COLS[0].id)
+    const firstCat = categories[0]?.slug || ''
+    setColId(board === 'board1' ? firstCat : BOARD2_COLS[0].id)
+    setCat(firstCat)
   }
 
   function openEdit(card: DynamicsCard) {
@@ -293,7 +344,7 @@ export default function Dynamics() {
     setDesc(card.description || '')
     setTargetBoard(card.board)
     setColId(card.column_id)
-    setCat(card.category || BOARD1_COLS[0].id)
+    setCat(card.category || categories[0]?.slug || '')
     setFile(null)
     setModal(true)
     setDetailCard(null)
@@ -302,7 +353,7 @@ export default function Dynamics() {
   function closeModal() {
     setModal(false)
     setEditingCard(null)
-    setTitle(''); setDesc(''); setCat(BOARD1_COLS[0].id); setFile(null)
+    setTitle(''); setDesc(''); setCat(categories[0]?.slug || ''); setFile(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -397,14 +448,32 @@ export default function Dynamics() {
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
           borderRadius: 24, padding: 20, marginBottom: 16,
         }}>
-          {sectionHeader('Estratégias', 'Organize suas dinâmicas por categoria')}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.01em' }}>Estratégias</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.30)', marginTop: 2 }}>Organize suas dinâmicas por setor</div>
+            </div>
+            <button onClick={() => setCategoryModal({ open: true })} style={{
+              padding: '6px 12px', borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 500, cursor: 'pointer',
+            }}>+ Novo setor</button>
+          </div>
           <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
             <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
-              {BOARD1_COLS.map(col => (
-                <Column key={col.id} colId={col.id} label={col.label}
-                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
-                  canManage={(c) => profile?.role === 'admin' || c.created_by === profile?.id} />
+              {categories.map(cat => (
+                <Column key={cat.id} colId={cat.slug} label={cat.name} color={cat.color}
+                  cards={colCards('board1', cat.slug)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
+                  canManage={(c) => profile?.role === 'admin' || c.created_by === profile?.id}
+                  categories={categories}
+                  onEditCategory={() => setCategoryModal({ open: true, editing: cat })}
+                  onDeleteCategory={() => handleDeleteCategory(cat)} />
               ))}
+              {categories.length === 0 && (
+                <div style={{ padding: 24, color: 'rgba(255,255,255,0.4)', fontSize: 13, textAlign: 'center', width: '100%' }}>
+                  Nenhum setor cadastrado. Clique em "+ Novo setor" para criar.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -431,7 +500,7 @@ export default function Dynamics() {
               {BOARD2_COLS.map(col => (
                 <Column key={col.id} colId={col.id} label={col.label}
                   cards={colCards('board2', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
-                  compact
+                  compact categories={categories}
                   canManage={(c) => profile?.role === 'admin' || c.created_by === profile?.id} />
               ))}
             </div>
@@ -439,7 +508,7 @@ export default function Dynamics() {
         </div>
 
         <DragOverlay>
-          {activeCard ? <FloatingCard card={activeCard} /> : null}
+          {activeCard ? <FloatingCard card={activeCard} categories={categories} /> : null}
         </DragOverlay>
       </DndContext>
 
@@ -447,10 +516,10 @@ export default function Dynamics() {
       <Drawer open={!!detailCard} onClose={() => setDetailCard(null)} title="Detalhes">
         {detailCard && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {detailCard.category && CATEGORY_META[detailCard.category] && (
+            {detailCard.category && (
               <div>
-                <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
-                <CategoryBadge categoryKey={detailCard.category} />
+                <div className="label" style={{ marginBottom: 6 }}>Setor</div>
+                <CategoryBadge categoryKey={detailCard.category} categories={categories} />
               </div>
             )}
             <div>
@@ -514,31 +583,33 @@ export default function Dynamics() {
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>Coluna</div>
                 <select className="input" value={colId} onChange={e => setColId(e.target.value)}>
-                  {(targetBoard === 'board1' ? BOARD1_COLS : BOARD2_COLS).map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  {targetBoard === 'board1'
+                    ? categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)
+                    : BOARD2_COLS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)
+                  }
                 </select>
               </div>
 
-              {/* Category: auto for board1, user-select for board2 */}
+              {/* Setor: automático em board1, escolhe em board2 */}
               {targetBoard === 'board1' ? (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
                   borderRadius: 10, padding: '8px 12px',
                 }}>
-                  <div className="label" style={{ margin: 0 }}>Categoria</div>
-                  <CategoryBadge categoryKey={colId} />
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>automática</span>
+                  <div className="label" style={{ margin: 0 }}>Setor</div>
+                  <CategoryBadge categoryKey={colId} categories={categories} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 'auto' }}>automático</span>
                 </div>
               ) : (
                 <div>
-                  <div className="label" style={{ marginBottom: 6 }}>Categoria</div>
+                  <div className="label" style={{ marginBottom: 6 }}>Setor</div>
                   <select className="input" value={category} onChange={e => setCat(e.target.value)}>
-                    {BOARD1_COLS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
                   </select>
-                  {/* Preview */}
-                  {category && CATEGORY_META[category] && (
+                  {category && (
                     <div style={{ marginTop: 6 }}>
-                      <CategoryBadge categoryKey={category} />
+                      <CategoryBadge categoryKey={category} categories={categories} />
                     </div>
                   )}
                 </div>
@@ -583,6 +654,125 @@ export default function Dynamics() {
           </div>
         </div>
       )}
+
+      {/* Modal de categoria/setor */}
+      {categoryModal.open && (
+        <CategoryFormModal
+          existing={categoryModal.editing ?? null}
+          projectId={activeProject?.id ?? ''}
+          existingSlugs={categories.map(c => c.slug)}
+          onClose={() => setCategoryModal({ open: false })}
+          onSaved={() => { setCategoryModal({ open: false }); load() }}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── Modal de criar/editar setor ─────────────────────── */
+function CategoryFormModal({ existing, projectId, existingSlugs, onClose, onSaved }: {
+  existing: DynamicsCategory | null
+  projectId: string
+  existingSlugs: string[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [name, setName] = useState(existing?.name || '')
+  const [color, setColor] = useState(existing?.color || PRESET_COLORS[0])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function slugify(s: string) {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!name.trim()) { setError('Digite um nome.'); return }
+
+    setSaving(true)
+    if (existing) {
+      // editar
+      await supabase.from('dynamics_categories')
+        .update({ name: name.trim(), color })
+        .eq('id', existing.id)
+    } else {
+      // criar
+      const slug = slugify(name)
+      if (existingSlugs.includes(slug)) {
+        setError('Já existe um setor com esse nome.')
+        setSaving(false); return
+      }
+      const pos = existingSlugs.length
+      const { error: err } = await supabase.from('dynamics_categories').insert({
+        project_id: projectId, slug, name: name.trim(), color, position: pos,
+      })
+      if (err) { setError('Erro ao salvar. Tente novamente.'); setSaving(false); return }
+    }
+    onSaved()
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(6px)' }}>
+      <div className="glass-raised" style={{ width: '100%', maxWidth: 400, margin: 16, padding: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#FFF' }}>
+            {existing ? 'Editar setor' : 'Novo setor'}
+          </span>
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 8, background: 'transparent',
+            border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 18, cursor: 'pointer' }}>×</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <div className="label" style={{ marginBottom: 6 }}>Nome do setor</div>
+            <input required className="input" autoFocus value={name} onChange={e => setName(e.target.value)}
+              placeholder="Ex: Reativação, Black Friday..." />
+          </div>
+
+          <div>
+            <div className="label" style={{ marginBottom: 8 }}>Cor</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              {PRESET_COLORS.map(c => (
+                <button key={c} type="button" onClick={() => setColor(c)} style={{
+                  width: '100%', height: 36, borderRadius: 8, border: c === color ? '2px solid #FFF' : '2px solid transparent',
+                  background: c, cursor: 'pointer', transition: 'transform 0.12s',
+                  boxShadow: c === color ? `0 0 12px ${c}80` : 'none',
+                }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10,
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 10, padding: '10px 12px' }}>
+            <div className="label" style={{ margin: 0 }}>Preview</div>
+            <div style={{
+              display: 'inline-block', fontSize: 9, fontWeight: 700,
+              letterSpacing: '0.07em', textTransform: 'uppercase',
+              color: '#FFF', background: color, borderRadius: 5, padding: '2px 7px',
+            }}>{name || 'sem nome'}</div>
+          </div>
+
+          {error && (
+            <div style={{ fontSize: 12, color: '#ff6b6b', background: 'rgba(255,107,107,0.08)',
+              border: '1px solid rgba(255,107,107,0.2)', padding: '8px 12px', borderRadius: 8 }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
+            <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
+            <button type="submit" disabled={saving} className="btn-primary">
+              {saving ? 'Salvando...' : (existing ? 'Salvar' : 'Criar setor')}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

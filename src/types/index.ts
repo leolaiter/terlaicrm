@@ -36,6 +36,16 @@ export interface Receipt {
   profiles?: Profile
 }
 
+export interface DynamicsCategory {
+  id: string
+  project_id: string
+  slug: string
+  name: string
+  color: string
+  position: number
+  created_at: string
+}
+
 export type BoardType = 'board1' | 'board2'
 
 export interface DynamicsCard {

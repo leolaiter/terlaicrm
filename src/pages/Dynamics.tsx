@@ -190,6 +190,7 @@ export default function Dynamics() {
   const [detailCard, setDetailCard] = useState<DynamicsCard | null>(null)
   const [attachCard, setAttachCard] = useState<DynamicsCard | null>(null)
   const [modal, setModal]           = useState(false)
+  const [editingCard, setEditingCard] = useState<DynamicsCard | null>(null)
 
   const [title, setTitle]           = useState('')
   const [description, setDesc]      = useState('')
@@ -282,10 +283,34 @@ export default function Dynamics() {
     setCat(BOARD1_COLS[0].id)
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  function openEdit(card: DynamicsCard) {
+    setEditingCard(card)
+    setTitle(card.title)
+    setDesc(card.description || '')
+    setTargetBoard(card.board)
+    setColId(card.column_id)
+    setCat(card.category || BOARD1_COLS[0].id)
+    setFile(null)
+    setModal(true)
+    setDetailCard(null)
+  }
+
+  function closeModal() {
+    setModal(false)
+    setEditingCard(null)
+    setTitle(''); setDesc(''); setCat(BOARD1_COLS[0].id); setFile(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    let attachment_url = null, attachment_name = null, attachment_type = null
+
+    // Upload de novo anexo (se houver)
+    let attachment_url = editingCard?.attachment_url ?? null
+    let attachment_name = editingCard?.attachment_name ?? null
+    let attachment_type = editingCard?.attachment_type ?? null
+
     if (file) {
       const ext = file.name.split('.').pop()
       const path = `${profile?.id}/${Date.now()}.${ext}`
@@ -297,20 +322,42 @@ export default function Dynamics() {
       }
     }
 
-    // Board 1: category comes from the column itself
-    // Board 2: category comes from the select the user chose
     const categoryValue = targetBoard === 'board1' ? colId : category
 
-    const pos = cards.filter(c => c.board === targetBoard && c.column_id === colId).length
-    await supabase.from('dynamics_cards').insert({
-      board: targetBoard, column_id: colId, title, description,
-      category: categoryValue,
-      project_id: activeProject?.id ?? profile?.project_id,
-      attachment_url, attachment_name, attachment_type, position: pos, created_by: profile?.id,
-    })
-    setTitle(''); setDesc(''); setCat(BOARD1_COLS[0].id); setFile(null)
-    if (fileRef.current) fileRef.current.value = ''
-    setModal(false); setSaving(false); load()
+    if (editingCard) {
+      // EDIT
+      await supabase.from('dynamics_cards').update({
+        board: targetBoard,
+        column_id: colId,
+        title,
+        description,
+        category: categoryValue,
+        attachment_url, attachment_name, attachment_type,
+      }).eq('id', editingCard.id)
+    } else {
+      // CREATE
+      const pos = cards.filter(c => c.board === targetBoard && c.column_id === colId).length
+      await supabase.from('dynamics_cards').insert({
+        board: targetBoard, column_id: colId, title, description,
+        category: categoryValue,
+        project_id: activeProject?.id ?? profile?.project_id,
+        attachment_url, attachment_name, attachment_type, position: pos, created_by: profile?.id,
+      })
+    }
+
+    closeModal()
+    setSaving(false)
+    load()
+  }
+
+  async function removeAttachment() {
+    if (!editingCard) return
+    if (!window.confirm('Remover o anexo atual?')) return
+    await supabase.from('dynamics_cards').update({
+      attachment_url: null, attachment_name: null, attachment_type: null,
+    }).eq('id', editingCard.id)
+    setEditingCard({ ...editingCard, attachment_url: null, attachment_name: null, attachment_type: null })
+    load()
   }
 
   const sectionHeader = (label: string, sub: string) => (
@@ -416,6 +463,16 @@ export default function Dynamics() {
                 <FileViewer url={detailCard.attachment_url} fileType={detailCard.attachment_type ?? ''} name={detailCard.attachment_name ?? undefined} />
               </div>
             )}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button onClick={() => { handleDelete(detailCard); setDetailCard(null) }} style={{
+                padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,107,107,0.25)',
+                background: 'rgba(255,107,107,0.08)', color: '#ff6b6b',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>Excluir</button>
+              <button onClick={() => openEdit(detailCard)} className="btn-primary" style={{ fontSize: 12 }}>
+                ✎ Editar
+              </button>
+            </div>
           </div>
         )}
       </Drawer>
@@ -432,11 +489,11 @@ export default function Dynamics() {
           background: 'rgba(0,0,0,0.60)', backdropFilter: 'blur(6px)' }}>
           <div className="glass-raised" style={{ width: '100%', maxWidth: 440, margin: 16, padding: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#FFF' }}>Nova dinâmica</span>
-              <button onClick={() => setModal(false)} style={{ width: 28, height: 28, borderRadius: 8, background: 'transparent',
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#FFF' }}>{editingCard ? 'Editar dinâmica' : 'Nova dinâmica'}</span>
+              <button onClick={closeModal} style={{ width: 28, height: 28, borderRadius: 8, background: 'transparent',
                 border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: 18, cursor: 'pointer' }}>×</button>
             </div>
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
               <div>
                 <div className="label" style={{ marginBottom: 6 }}>Board</div>
@@ -489,14 +546,30 @@ export default function Dynamics() {
                   placeholder="Descreva a dinâmica..." style={{ resize: 'none' }} />
               </div>
               <div>
-                <div className="label" style={{ marginBottom: 6 }}>Anexo</div>
+                <div className="label" style={{ marginBottom: 6 }}>Anexo {editingCard?.attachment_name && '(substitui o atual)'}</div>
+                {editingCard?.attachment_url && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+                    padding: '6px 10px', borderRadius: 8,
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      📎 {editingCard.attachment_name}
+                    </span>
+                    <button type="button" onClick={removeAttachment} style={{
+                      fontSize: 11, color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer',
+                    }}>Remover</button>
+                  </div>
+                )}
                 <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={e => setFile(e.target.files?.[0] ?? null)}
                   className="input" style={{ paddingTop: 6 }} />
               </div>
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
-                <button type="button" onClick={() => setModal(false)} className="btn-secondary">Cancelar</button>
-                <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Salvando...' : 'Criar card'}</button>
+                <button type="button" onClick={closeModal} className="btn-secondary">Cancelar</button>
+                <button type="submit" disabled={saving} className="btn-primary">
+                  {saving ? 'Salvando...' : (editingCard ? 'Salvar alterações' : 'Criar card')}
+                </button>
               </div>
             </form>
           </div>

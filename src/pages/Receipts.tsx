@@ -39,6 +39,19 @@ export default function Receipts() {
     setLoading(false)
   }
 
+  async function deleteReceipt(r: Receipt) {
+    if (!window.confirm(`Excluir o comprovante de ${currency(Number(r.amount))}?`)) return
+    await supabase.from('receipts').delete().eq('id', r.id)
+    setReceipts(prev => prev.filter(x => x.id !== r.id))
+    if (selected?.id === r.id) setSelected(null)
+  }
+
+  async function saveNotes(id: string, notes: string) {
+    await supabase.from('receipts').update({ notes }).eq('id', id)
+    setReceipts(prev => prev.map(x => x.id === id ? { ...x, notes } : x))
+    if (selected?.id === id) setSelected(prev => prev ? { ...prev, notes } : null)
+  }
+
   useEffect(() => { if (profile) load() }, [profile, activeProject?.id])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -160,11 +173,20 @@ export default function Receipts() {
                 <td style={{ color: 'rgba(255,255,255,0.50)' }}>{format(new Date(r.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                 <td>{statusEl(r.status)}</td>
                 <td>
-                  <button onClick={() => setSelected(r)}
-                    style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
-                      background: 'none', border: 'none', fontFamily: 'Inter', fontWeight: 500 }}>
-                    Ver →
-                  </button>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'flex-end' }}>
+                    {(profile?.role === 'admin' || r.user_id === profile?.id) && (
+                      <button onClick={() => deleteReceipt(r)} title="Excluir"
+                        style={{ fontSize: 12, color: 'rgba(255,107,107,0.65)', cursor: 'pointer',
+                          background: 'none', border: 'none', fontWeight: 500 }}>
+                        Excluir
+                      </button>
+                    )}
+                    <button onClick={() => setSelected(r)}
+                      style={{ fontSize: 12, color: 'rgba(255,255,255,0.40)', cursor: 'pointer',
+                        background: 'none', border: 'none', fontFamily: 'Inter', fontWeight: 500 }}>
+                      Ver →
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -174,37 +196,122 @@ export default function Receipts() {
 
       <Drawer open={!!selected} onClose={() => setSelected(null)} title="Comprovante">
         {selected && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div>
-                <div className="label" style={{ marginBottom: 4 }}>Valor</div>
-                <div className="value-lg">{currency(Number(selected.amount))}</div>
-              </div>
-              <div>
-                <div className="label" style={{ marginBottom: 4 }}>Data</div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#FFF' }}>
-                  {format(new Date(selected.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}
-                </div>
-              </div>
-              <div>
-                <div className="label" style={{ marginBottom: 4 }}>Status</div>
-                {statusEl(selected.status)}
-              </div>
-              {selected.notes && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div className="label" style={{ marginBottom: 4 }}>Observação</div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)' }}>{selected.notes}</div>
-                </div>
-              )}
-            </div>
-            <div className="divider" />
-            <div>
-              <div className="label" style={{ marginBottom: 12 }}>Arquivo</div>
-              <FileViewer url={selected.file_url} fileType={selected.file_type} />
-            </div>
-          </div>
+          <ReceiptDetail
+            receipt={selected}
+            canEdit={profile?.role === 'admin' || selected.user_id === profile?.id}
+            onSaveNotes={(notes) => saveNotes(selected.id, notes)}
+            onDelete={() => deleteReceipt(selected)}
+          />
         )}
       </Drawer>
+    </div>
+  )
+}
+
+function ReceiptDetail({ receipt, canEdit, onSaveNotes, onDelete }: {
+  receipt: Receipt
+  canEdit: boolean
+  onSaveNotes: (notes: string) => Promise<void>
+  onDelete: () => void
+}) {
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesDraft, setNotesDraft] = useState(receipt.notes || '')
+  const [savingNotes, setSavingNotes] = useState(false)
+
+  function statusEl(s: string) {
+    if (s === 'approved') return <span className="status-approved">Aprovado</span>
+    if (s === 'rejected') return <span className="status-rejected">Rejeitado</span>
+    return <span className="status-pending">Pendente</span>
+  }
+
+  async function saveAndClose() {
+    setSavingNotes(true)
+    await onSaveNotes(notesDraft)
+    setSavingNotes(false)
+    setEditingNotes(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div>
+          <div className="label" style={{ marginBottom: 4 }}>Valor</div>
+          <div className="value-lg">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(receipt.amount))}</div>
+        </div>
+        <div>
+          <div className="label" style={{ marginBottom: 4 }}>Data</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: '#FFF' }}>
+            {format(new Date(receipt.deposit_date + 'T00:00:00'), 'dd/MM/yyyy')}
+          </div>
+        </div>
+        <div>
+          <div className="label" style={{ marginBottom: 4 }}>Status</div>
+          {statusEl(receipt.status)}
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div className="label" style={{ margin: 0 }}>Observação</div>
+          {canEdit && !editingNotes && (
+            <button onClick={() => { setNotesDraft(receipt.notes || ''); setEditingNotes(true) }} style={{
+              fontSize: 11, color: 'rgba(255,255,255,0.55)',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            }}>{receipt.notes ? '✎ Editar' : '+ Adicionar'}</button>
+          )}
+        </div>
+        {editingNotes ? (
+          <div>
+            <textarea
+              value={notesDraft}
+              onChange={e => setNotesDraft(e.target.value)}
+              autoFocus
+              rows={3}
+              placeholder="Escreva uma observação sobre este comprovante..."
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 10,
+                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.10)',
+                color: '#FFF', fontSize: 13, outline: 'none', resize: 'vertical',
+                fontFamily: 'inherit',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setEditingNotes(false)} style={{
+                fontSize: 11, padding: '5px 10px', borderRadius: 6,
+                background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.55)',
+                border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
+              }}>Cancelar</button>
+              <button onClick={saveAndClose} disabled={savingNotes} style={{
+                fontSize: 11, padding: '5px 10px', borderRadius: 6,
+                background: '#D4C429', color: '#0E0E11',
+                border: 'none', fontWeight: 600, cursor: savingNotes ? 'wait' : 'pointer',
+              }}>{savingNotes ? '...' : 'Salvar'}</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: 13, color: receipt.notes ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.25)' }}>
+            {receipt.notes || 'Nenhuma observação'}
+          </div>
+        )}
+      </div>
+
+      <div className="divider" />
+
+      <div>
+        <div className="label" style={{ marginBottom: 12 }}>Arquivo</div>
+        <FileViewer url={receipt.file_url} fileType={receipt.file_type} />
+      </div>
+
+      {canEdit && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <button onClick={onDelete} style={{
+            padding: '8px 16px', borderRadius: 8,
+            background: 'rgba(255,107,107,0.08)', color: '#ff6b6b',
+            border: '1px solid rgba(255,107,107,0.25)',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+          }}>Excluir comprovante</button>
+        </div>
+      )}
     </div>
   )
 }

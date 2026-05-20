@@ -48,11 +48,12 @@ function CategoryBadge({ categoryKey }: { categoryKey: string }) {
 }
 
 /* ─── Sortable Card ────────────────────────────── */
-function KanbanCard({ card, onDetail, onAttachment, onDelete }: {
+function KanbanCard({ card, onDetail, onAttachment, onDelete, canManage }: {
   card: DynamicsCard
   onDetail: (c: DynamicsCard) => void
   onAttachment: (c: DynamicsCard) => void
   onDelete: (c: DynamicsCard) => void
+  canManage: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id })
 
@@ -102,6 +103,7 @@ function KanbanCard({ card, onDetail, onAttachment, onDelete }: {
               📎
             </button>
           )}
+          {canManage && (
           <button onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); onDelete(card) }}
             title="Excluir dinâmica"
             style={{
@@ -126,6 +128,7 @@ function KanbanCard({ card, onDetail, onAttachment, onDelete }: {
           >
             🗑
           </button>
+          )}
         </div>
       </div>
     </div>
@@ -133,10 +136,11 @@ function KanbanCard({ card, onDetail, onAttachment, onDelete }: {
 }
 
 /* ─── Column ────────────────────────────────────── */
-function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact }: {
+function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact, canManage }: {
   colId: string; label: string; cards: DynamicsCard[]
   onDetail: (c: DynamicsCard) => void; onAttachment: (c: DynamicsCard) => void
   onDelete: (c: DynamicsCard) => void; compact?: boolean
+  canManage: (c: DynamicsCard) => boolean
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: colId })
 
@@ -156,7 +160,7 @@ function Column({ colId, label, cards, onDetail, onAttachment, onDelete, compact
           transition: 'background 0.12s, border-color 0.12s',
         }}>
           {cards.map(c => (
-            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} onDelete={onDelete} />
+            <KanbanCard key={c.id} card={c} onDetail={onDetail} onAttachment={onAttachment} onDelete={onDelete} canManage={canManage(c)} />
           ))}
         </div>
       </SortableContext>
@@ -398,7 +402,8 @@ export default function Dynamics() {
             <div style={{ display: 'flex', gap: 12, minWidth: 'max-content' }}>
               {BOARD1_COLS.map(col => (
                 <Column key={col.id} colId={col.id} label={col.label}
-                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete} />
+                  cards={colCards('board1', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
+                  canManage={(c) => profile?.role === 'admin' || c.created_by === profile?.id} />
               ))}
             </div>
           </div>
@@ -426,7 +431,8 @@ export default function Dynamics() {
               {BOARD2_COLS.map(col => (
                 <Column key={col.id} colId={col.id} label={col.label}
                   cards={colCards('board2', col.id)} onDetail={setDetailCard} onAttachment={setAttachCard} onDelete={handleDelete}
-                  compact />
+                  compact
+                  canManage={(c) => profile?.role === 'admin' || c.created_by === profile?.id} />
               ))}
             </div>
           </div>
@@ -463,16 +469,18 @@ export default function Dynamics() {
                 <FileViewer url={detailCard.attachment_url} fileType={detailCard.attachment_type ?? ''} name={detailCard.attachment_name ?? undefined} />
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <button onClick={() => { handleDelete(detailCard); setDetailCard(null) }} style={{
-                padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,107,107,0.25)',
-                background: 'rgba(255,107,107,0.08)', color: '#ff6b6b',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-              }}>Excluir</button>
-              <button onClick={() => openEdit(detailCard)} className="btn-primary" style={{ fontSize: 12 }}>
-                ✎ Editar
-              </button>
-            </div>
+            {(profile?.role === 'admin' || detailCard.created_by === profile?.id) && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button onClick={() => { handleDelete(detailCard); setDetailCard(null) }} style={{
+                  padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,107,107,0.25)',
+                  background: 'rgba(255,107,107,0.08)', color: '#ff6b6b',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}>Excluir</button>
+                <button onClick={() => openEdit(detailCard)} className="btn-primary" style={{ fontSize: 12 }}>
+                  ✎ Editar
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Drawer>
